@@ -1,0 +1,20 @@
+{
+    "verbose" : false,
+    "board_size" : 5,
+    "episode_number": 200,
+    "search_per_episode": 100,
+    "anet_lr": 0.0005,
+    "anet_layers": [
+        {
+            "neurons": 20,
+            "activation": "relu"
+        },
+        {
+            "neurons": 5,
+            "activation": "relu"
+        }
+    ],
+    "anet_optim" : "adam",
+    "number_cached_anet": 5,
+    "number_tournament_games": 100
+}
