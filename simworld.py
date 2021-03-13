@@ -7,20 +7,24 @@ from PIL import ImageDraw
 import io
 import variables
 class Node:
-    def __init__(self, coordinates, is_empty):
+    def __init__(self, coordinates):
         self.coordinates = coordinates
         self.neighbours = {}
-        self.is_empty = is_empty
-        self.is_selected = False
-        self.is_being_eaten = False
+        # 0 for empty, 1 for player 1 and 2 for player 2
+        self.populated = 0
+        self.parent = None
+        #self.is_empty = is_empty
+        #self.is_selected = False
+        #self.is_being_eaten = False
     
     def empty_the_node(self):
-        self.is_empty = True
+        self.is_empty = 0
+
 class Board:
-    def __init__(self, form, size, empty_nodes, visualize):
-        self.form = form
+    def __init__(self, size, visualize):
+        #self.form = form
         self.size = size
-        self.empty_nodes = empty_nodes
+        #self.empty_nodes = empty_nodes
         self.pawns = {}
         self.state_t = None
         self.move_counter = 0
@@ -35,12 +39,13 @@ class Board:
         self.visualize = visualize
         self.move_counter = 0
         for node in self.pawns.values():
-            if node.coordinates in self.empty_nodes:
+            node.empty_the_node()
+            '''if node.coordinates in self.empty_nodes:
                 node.is_empty = True
             else:
                 node.is_empty = False
             node.is_being_eaten = False
-            node.is_selected = False
+            node.is_selected = False'''
         self.update_state()
         if self.visualize:
             self.graph = self.generate_graph()
@@ -50,24 +55,14 @@ class Board:
     
     def find_valid_neighbours(self,node):
         #find all possible neighbours using defined direction rules. Save thoose neighbours in the neighboard-list of the node as a tuple (direction, node)  
-        if variables.debug:
-            print ("node: " + str(node.coordinates))
-        if self.form == "diamond":
-            possible_neighbors = ((0,-1),(-1,0),(-1,1),(0,1),(1,0),(1,-1))
-            for possible_neighbor in possible_neighbors:
-                tmp_coordinate = (node.coordinates[0] + possible_neighbor[0], node.coordinates[1] + possible_neighbor[1])
-                if variables.debug:
-                    print("tmp_coordinates: " + str(tmp_coordinate))
-                if tmp_coordinate != node.coordinates and  tmp_coordinate[0] >=0 and tmp_coordinate[0] < self.size and tmp_coordinate[1] >= 0 and tmp_coordinate[1] < self.size:
-                    if self.pawns[tmp_coordinate] not in node.neighbours:
-                        node.neighbours[possible_neighbor] = self.pawns[tmp_coordinate]
-        elif self.form == "triangle":
-            possible_neighbors = ((-1,-1),(-1,0),(0,1),(1,1),(1,0),(0,-1))
-            for possible_neighbor in possible_neighbors:
-                tmp_coordinate = (node.coordinates[0] + possible_neighbor[0], node.coordinates[1] + possible_neighbor[1])
-                if tmp_coordinate != node.coordinates and tmp_coordinate[0] >=0 and tmp_coordinate[0] < self.size and tmp_coordinate[1] >= 0 and tmp_coordinate[1] <= tmp_coordinate[0]:
-                    if self.pawns[tmp_coordinate] not in node.neighbours:
-                        node.neighbours[possible_neighbor] = self.pawns[tmp_coordinate]
+        possible_neighbors = ((0,-1),(-1,0),(-1,1),(0,1),(1,0),(1,-1))
+        for possible_neighbor in possible_neighbors:
+            tmp_coordinate = (node.coordinates[0] + possible_neighbor[0], node.coordinates[1] + possible_neighbor[1])
+            if variables.debug:
+                print("tmp_coordinates: " + str(tmp_coordinate))
+            if tmp_coordinate != node.coordinates and  tmp_coordinate[0] >=0 and tmp_coordinate[0] < self.size and tmp_coordinate[1] >= 0 and tmp_coordinate[1] < self.size:
+                if self.pawns[tmp_coordinate] not in node.neighbours:
+                    node.neighbours[possible_neighbor] = self.pawns[tmp_coordinate]
 
     def populate_board(self):
         #Generate all the pegs (nodes) and find all they legal neighbours
