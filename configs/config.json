@@ -15,6 +15,8 @@
         }
     ],
     "anet_optim" : "adam",
+    "epsilon": 0.5,
+    "number_of_simulations": 200,
     "number_cached_anet": 5,
     "number_tournament_games": 100
 }
