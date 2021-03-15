@@ -3,9 +3,9 @@ import simworld
 
 class MTCS_node():
     
-    def __init__(self, parent, rollout):
+    def __init__(self, state, parent, rollout):
+        self.state = state
         self.parent = parent
-        self.original_node = None
         self.isRollout = rollout
         self.is_leaf = True
         #N(s)
@@ -22,40 +22,52 @@ class MTCS_node():
 
 class MTCS():
 
-    def __init__(self, init_state, simworld, player, cfg):
+    def __init__(self, init_state, simworld, player, actor,  cfg):
+        self.actor = actor
         self.init_state = init_state
-        self.root = self.import_node(root)
+        self.root = self.import_node(init_state)
         self.epsilon = cfg["epsilon"]
-        self.simworld = simworld.board(cfg["board_size"], False)
         self.number_of_simulations = cfg["number_of_simulations"]
+        self.simworld = simworld.board(cfg["board_size"], False)
         self.active_player = player
+        #TODO: Update the board with the root state
 
     def run_simulation(self):
         simulation = 1
         pointer = self.root
+        self.board.set_state(pointer.state)
         while simulation < self.number_of_simulations:
             #Traversate the tree while pointing to a non goal state
-            while is_goal_state(pointer):
+            while not is_goal_state():
                 #Check wether pointer points to a leaf node
                 #If the node is not a leaf node, point to the next one using the active player and tree policy
                 if pointer.isLeaf:
                     pointer = self.choose_next_node(pointer)
+                    self.board.set_state(pointer.state)
                 #Else, check wether the node has been sampled before
                 else:
                     #If the node has been sampled before, expand it, select the first of the childrens and run a rollout and backpropagation
                     if pointer.total_visits > 0:
                         self.expand_leaf(pointer)
                         pointer = pointer.childrens[pointer.childrens.keys[0]]
+                        self.board.set_state(pointer.state)
                     reward = self.rollout(pointer)
                     self.backpropagate(reward, pointer)
-            
-
         return -1
-    def is_goal_state(self, node):
+
+    def is_goal_state(self, state):
+        if self.board.is_goal_state():
+            return True
         return False
 
     def rollout(self, node):
-        return -1
+        state = node.state
+        self.board.set_state(state)
+        possible_actions = self.board.find_all_legal_actions()
+        while not is_goal_state():
+            action = self.actor.get_action(state, possible_actions)
+            self.board.update(action)
+        return self.board.get_reward()
     
     def backpropagate(self, reward, node)
     return -1
@@ -88,8 +100,11 @@ class MTCS():
 
         return -1
 
-    def import_node(self, node):
+    def import_state(self, state):
+        #Take the state of the board and return a MCTS root node
+        node = MTCS_node(None, False)
+        node.state = state
         return node
-    
+
     def change_player(self):
         self.active_player = (self.active_player + 1) % 3 + 1
