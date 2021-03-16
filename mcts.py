@@ -3,7 +3,7 @@ import simworld
 
 class MTCS_node():
     
-    def __init__(self, state, action, parent, rollout):
+    def __init__(self, state, action, parent):
         self.state = state
         self.action = action
         self.parent = parent
@@ -69,8 +69,8 @@ class MTCS():
         self.prune_tree(suggested_action)
         return suggested_action
 
-    def get_suggested_action(self):
-        return -1
+    def get_suggested_action(self, state, possible_actions):
+        return self.actor.get_action(state, possible_actions)
 
     def is_goal_state(self, state):
         if self.board.is_goal_state():
@@ -83,7 +83,7 @@ class MTCS():
         self.board.set_state(state)
         while not is_goal_state():
             possible_actions = self.board.find_all_legal_actions()
-            action = self.actor.get_action(state, possible_actions)
+            action = self.get_suggested_action(state, possible_actions)
             self.board.update(action)
         return self.board.get_reward()
     
@@ -102,7 +102,10 @@ class MTCS():
             pointer.update_q_value(action_used)
 
     def expand_leaf(self, node):
-        return -1
+        possible_actions = self.board.find_all_legal_actions()
+        for action in possible_actions:
+            tmp_state = self.board.get_next_state(node.state, action)
+            tmp_node = MTCS_node(tmp_state, action, node)
     
     def choose_next_node(self, node):
         #Calculate usa values and do the best greedy choice relate to the player playing

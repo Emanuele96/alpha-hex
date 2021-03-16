@@ -11,7 +11,7 @@ class Node:
         self.coordinates = coordinates
         self.neighbours = {}
         # 0 for empty, 1 for player 1 and 2 for player 2
-        self.populated_by = 0
+        self.populated = 0
         self.parent = None
         #self.is_empty = is_empty
         #self.is_selected = False
@@ -21,10 +21,10 @@ class Node:
         self.is_empty = 0
 
 class Board:
-    def __init__(self, size, visualize, verbose):
-        self.verbose = verbose
+    def __init__(self, size, visualize):
+        #self.form = form
         self.size = size
-        self.active_player = 1
+        #self.empty_nodes = empty_nodes
         self.pawns = {}
         self.state_t = None
         self.move_counter = 0
@@ -46,23 +46,37 @@ class Board:
     
     def get_state(self):
         return self.state_t
-
-    def set_state(self, state):
-        self.state_t = state
     
     def get_next_state(self, state_t, action):
-        next_state = self.state_t + action
-        return next_state
+        return -1
+    
+    def find_valid_neighbours(self,node):
+        #find all possible neighbours using defined direction rules. Save thoose neighbours in the neighboard-list of the node as a tuple (direction, node)  
+        possible_neighbors = ((0,-1),(-1,0),(-1,1),(0,1),(1,0),(1,-1))
+        for possible_neighbor in possible_neighbors:
+            tmp_coordinate = (node.coordinates[0] + possible_neighbor[0], node.coordinates[1] + possible_neighbor[1])
+            if variables.debug:
+                print("tmp_coordinates: " + str(tmp_coordinate))
+            if tmp_coordinate != node.coordinates and  tmp_coordinate[0] >=0 and tmp_coordinate[0] < self.size and tmp_coordinate[1] >= 0 and tmp_coordinate[1] < self.size:
+                if self.pawns[tmp_coordinate] not in node.neighbours:
+                    node.neighbours[possible_neighbor] = self.pawns[tmp_coordinate]
 
     def populate_board(self):
-        #Generate all the board nodes
-        state = np.zeros((self.size, self.size))
+        #Generate all the pegs (nodes) and find all they legal neighbours
+        state = ''
         for i in range(self.size):
-            for j in range(self.size):
-                is_empty = False
+            for j in range(i+1 if self.form == "triangle" else self.size):
+                if (i,j) in self.empty_nodes:
+                    is_empty = True
+                    state = state + '0'
+                else:
+                    is_empty = False
+                    state = state + '1'
                 node = Node((i,j), is_empty)   
                 self.pawns[(i,j)] = node
         self.state_t = state 
+        for coordinate in self.pawns:
+            self.find_valid_neighbours(self.pawns[coordinate])
       
     def to_numpy_array(self):
         #Convert the board to a numpy array, so that can be visualized.
@@ -174,32 +188,36 @@ class Board:
 
 
     def find_all_legal_actions(self):
-        #Analize the board and check all possible actions. 
+        #Analize the board and check all possible actions. Iterate trough all the nodes and for each neighboard, 
+        # check if with the move that needs to take from node-->neighboard, it comes to neighboard-->adj_to_neighboard
+        # and this is an empty node. 
         all_actions = list(())
-        board_state = self.state_t.shape[0, 1:]
-        empty_action = np.zeros(board_state.shape)
-        for i in range(board_state):
-            if self.state_t[i] == 0:
-                action = empty_action
-                action[i] = self.active_player
-                all_actions.append(action)                         
-        if self.verbose:
+        for node in self.pawns.values():
+            if node.is_empty:
+                continue
+            for neighbour_object in node.neighbours.items():
+                move = neighbour_object[0]
+                neighbour = neighbour_object[1]
+                if neighbour.is_empty:
+                    continue
+                if move in neighbour.neighbours:
+                    if neighbour.neighbours[move].is_empty:
+                        all_actions.append((node, move))
+
+                                
+        if variables.debug:
             print("all legal actions: " + str(len(all_actions)))
             for action in all_actions:
-                print(action)
+                print(str(action[0].coordinates) + "   " + str(action[1]) )
         return all_actions
                     
-    def is_goal_state(self):
-        return False
-    
-    def get_reward(self, player_id):
-        #return reward for being in state self.state_t at time t for player_id
-        if self.is_goal_state():
-            if self.active_player == player_id:
-                return 1
-            return -1
-        return 0
-        
+    def get_reward(self, game_over):
+        #return reward for being in state self.state_t at time t
+        if game_over and int(self.state_t.replace('0','')) == 1:
+            return variables.terminal_goal_state_reward 
+        elif game_over:
+            return variables.terminal_state_penalty
+        return variables.non_terminal_state_reward
 
     def update(self, action):
         #Apply the action to the board and change interested nodes propriety such that it can be visualized 
