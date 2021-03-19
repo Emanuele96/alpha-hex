@@ -63,9 +63,6 @@ class Board:
     def set_state(self, state):
         self.state_t = state
         self.set_active_player(state[0])
-
-    def set_active_player(self, player_id):
-        self.active_player = player_id
     
     def change_player(self):
         self.active_player = (self.active_player + 1) % 3 + 1
@@ -75,6 +72,9 @@ class Board:
 
     def get_next_state(self, state_t = self.state, action):
         #return the state t1 from state t taken action t. NB: This will not update the state of the board
+        if action not in self.possible_actions:
+            return None
+            #TODO implement raise exception
         next_state = self.state_t[0, 1:] + action
         next_state[0] = self.get_next_player()
         return next_state
@@ -240,17 +240,17 @@ class Board:
 
     def update(self, action):
         #Apply the action to the board and change interested nodes propriety such that it can be visualized 
-        #return a tuple of img frames with the first being the selected action and second the new board state
-        
-        self.set_state(self.get_next_state(action))
-        for i in rage(action.shape[1]):
-            if action[0, i] == self.active_player:
-                move_coordinates_1d = i
-                break
-        move_coordinates_2d_y = move_coordinates_1d // self.size
-        move_coordinates_2d_x = move_coordinates_1d % self.size
-        self.pawns[move_coordinates_2d_y, move_coordinates_2d_x].populated_by = self.active_player
-        self.set_active_player(self.change_player())
+        #return a img frame of the new board stat  
+        if action is not None:
+            self.set_state(self.get_next_state(action))
+            for i in rage(action.shape[1]):
+                if action[0, i] == self.active_player:
+                    move_coordinates_1d = i
+                    break
+            move_coordinates_2d_y = move_coordinates_1d // self.size
+            move_coordinates_2d_x = move_coordinates_1d % self.size
+            self.pawns[move_coordinates_2d_y, move_coordinates_2d_x].populated_by = self.active_player
+        self.change_player()
         self.find_all_legal_actions()
         if self.visualize:
             self.update_graph()
