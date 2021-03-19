@@ -5,7 +5,6 @@ from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw 
 import io
-import variables
 class Node:
     def __init__(self, coordinates):
         self.coordinates = coordinates
@@ -20,7 +19,7 @@ class Board:
     def __init__(self, size, visualize, verbose):
         self.verbose = verbose
         self.initial_state = np.zeros((1, size**2 + 1))
-        self.initial_state[0] = 1
+        self.initial_state[0,0] = 1
         self.size = size
         self.active_player = 1
         self.pawns = {}
@@ -45,7 +44,7 @@ class Board:
                 print("tmp_coordinates: " + str(tmp_coordinate))
             if tmp_coordinate != node.coordinates and  tmp_coordinate[0] >=0 and tmp_coordinate[0] < self.size and tmp_coordinate[1] >= 0 and tmp_coordinate[1] < self.size:
                 if self.pawns[tmp_coordinate] not in node.neighbours:
-                    node.neighbours[possible_neighbor] = self.pawns[tmp_coordinate]
+                    node.neighbours.append(self.pawns[tmp_coordinate])
 
     def reset(self, visualize):
         #Reset the board
@@ -65,29 +64,38 @@ class Board:
 
     def set_state(self, state, recompute_population = False):
         self.state_t = state
-        self.set_active_player(state[0])
+        self.set_active_player(state[0,0])
         if recompute_population:
             for i in range(state.shape[1]-1):
-                coordinates_1d = i + 1
-                coordinates_2d_y = move_coordinates_1d // self.size
-                coordinates_2d_x = move_coordinates_1d % self.size
-                self.pawns[coordinates_2d_y, coordinates_2d_x].populated_by = state[coordinates_1d]
+                coordinates_1d = i
+                coordinates_2d_y = coordinates_1d // self.size
+                coordinates_2d_x = coordinates_1d % self.size
+                self.pawns[coordinates_2d_y, coordinates_2d_x].populated_by = state[0, coordinates_1d]
         self.compute_all_possible_actions()
 
     
     def set_active_player(self, player_id):
         self.active_player = player_id
     
-    def get_next_player(self, active_player = self.active_player):
-        return (active_player + 1) % 3 + 1
+    def get_next_player(self, active_player = None):
+        if active_player is None:
+            active_player = self.active_player
+        if active_player == 1:
+            return 2
+        else:
+            return 1
 
-    def get_next_state(self, state_t = self.state, action):
+    def get_next_state(self, action,  state_t = None):
+        if state_t is None:
+            state_t = self.state_t
         #return the state t1 from state t taken action t. NB: This will not update the state of the board
         if action not in self.possible_actions:
             return None
             #TODO implement raise exception
-        next_state = self.state_t[0, 1:] + action
-        next_state[0] = self.get_next_player()
+        next_state = np.zeros(self.state_t.shape) + self.state_t
+        next_state[:, 1:] += action
+        next_state[0,0] = self.get_next_player()
+        print("next state ", next_state)
         return next_state
 
     def populate_board(self):
@@ -196,13 +204,14 @@ class Board:
     
     def compute_all_possible_actions(self):
         #Analize the board and check all possible actions. 
+        print("active player", self.active_player)
         all_actions = list(())
-        board_state = self.state_t.shape[0, 1:]
-        empty_action = np.zeros(board_state.shape)
-        for i in range(board_state):
-            if self.state_t[i] == 0:
-                action = empty_action
-                action[i] = self.active_player
+        tot_possible_actions = self.size**2
+        for i in range(tot_possible_actions):
+            print(self.state_t.shape)
+            if self.state_t[0, i+1] == 0:
+                action = np.zeros((1, tot_possible_actions))
+                action[0, i] = self.active_player
                 all_actions.append(action)                         
         if self.verbose:
             print("all legal actions: " + str(len(all_actions)))
@@ -211,12 +220,14 @@ class Board:
         self.possible_actions =  all_actions
                     
     def get_all_possible_actions(self):
+        print("all possible actions saved", self.possible_actions)
         return self.possible_actions
 
     def is_goal_state(self):
         #Start a DFS from each node on the active player side and check if there is a path to the other side
         visited_nodes = list()
         i=0
+        is_win = False
         if self.active_player == 1:
             start_coordinate = (0, i)
         else:
@@ -224,19 +235,20 @@ class Board:
         for i in range(self.size):
             node = self.pawns[start_coordinate]
             if (node.populated_by == self.active_player) and (node not in visited_nodes):
-                is_win = DFS_path_check(node, visited_nodes)
+                is_win = self.DFS_path_check(node, visited_nodes)
         return is_win
 
-    def DFS_path_check(node, visited_nodes):
+    def DFS_path_check(self, node, visited_nodes):
         #Perform recursive DFS with a list of visited nodes and domain specific terminal path settings.
         visited_nodes.append(node)
-        if node.coordinate[0] == self.size - 1 and self.active_player == 1:
+        if node.coordinates[0] == self.size - 1 and self.active_player == 1:
             return True
-        elif node.coordinate[1] == self.size - 1 and self.active_player == 2:
+        elif node.coordinates[1] == self.size - 1 and self.active_player == 2:
             return True    
-        for adj_node in node.neighboards:
+        for adj_node in node.neighbours:
+            is_terminal_path = False
             if (adj_node.populated_by == self.active_player) and (adj_node not in visited_nodes):
-                is_terminal_path = DFS_path_check(adj_node, visited_nodes)
+                is_terminal_path = self.DFS_path_check(adj_node, visited_nodes)
             if is_terminal_path:
                 return True
         return False
@@ -254,6 +266,8 @@ class Board:
         #return a img frame of the new board stat  
         if action is not None:
             self.set_state(self.get_next_state(action))
+            print("updated action", action)
+            print("state", self.state_t)
             for i in range(action.shape[1]):
                 if action[0, i] == self.active_player:
                     move_coordinates_1d = i

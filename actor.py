@@ -1,4 +1,3 @@
-import variables
 import random
 class Actor:
 
@@ -30,6 +29,7 @@ class Actor:
                     max_policy_value = policy_value
 
         return choosen_action'''
+        print("possible actions actor", possible_actions)
         return possible_actions[0]
 
     def update(self, state_t, action_t, TD_error):
