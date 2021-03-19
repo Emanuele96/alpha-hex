@@ -9,30 +9,43 @@ import variables
 class Node:
     def __init__(self, coordinates):
         self.coordinates = coordinates
-        self.neighbours = {}
+        self.neighbours = [] #{}
         # 0 for empty, 1 for player 1 and 2 for player 2
         self.populated_by = 0
-        self.parent = None
-        #self.is_empty = is_empty
-        #self.is_selected = False
-        #self.is_being_eaten = False
     
     def empty_the_node(self):
-        self.is_empty = 0
+        self.populated_by = 0
 
 class Board:
     def __init__(self, size, visualize, verbose):
         self.verbose = verbose
+        self.initial_state = np.zeros((1, size**2 + 1))
+        self.initial_state[0] = 1
         self.size = size
         self.active_player = 1
         self.pawns = {}
-        self.state_t = None
+        self.state_t = self.initial_state
         self.move_counter = 0
         self.populate_board()
+        self.possible_actions = None
         self.graph = None
         self.visualize = visualize
         if self.visualize:
             self.graph = self.generate_graph()
+
+    def find_valid_neighbours(self,node):
+        #find all possible neighbours using defined direction rules. Save thoose neighbours in the neighboard-list of the node
+        if self.verbose:
+            print ("node: " + str(node.coordinates))
+
+        possible_neighbors = ((0,-1),(-1,0),(-1,1),(0,1),(1,0),(1,-1))
+        for possible_neighbor in possible_neighbors:
+            tmp_coordinate = (node.coordinates[0] + possible_neighbor[0], node.coordinates[1] + possible_neighbor[1])
+            if self.verbose:
+                print("tmp_coordinates: " + str(tmp_coordinate))
+            if tmp_coordinate != node.coordinates and  tmp_coordinate[0] >=0 and tmp_coordinate[0] < self.size and tmp_coordinate[1] >= 0 and tmp_coordinate[1] < self.size:
+                if self.pawns[tmp_coordinate] not in node.neighbours:
+                    node.neighbours[possible_neighbor] = self.pawns[tmp_coordinate]
 
     def reset(self, visualize):
         #Reset the board
@@ -40,7 +53,7 @@ class Board:
         self.move_counter = 0
         for node in self.pawns.values():
             node.empty_the_node()
-        self.update_state()
+        self.set_state(self.initial_state)
         if self.visualize:
             self.graph = self.generate_graph()
     
@@ -49,20 +62,32 @@ class Board:
 
     def set_state(self, state):
         self.state_t = state
+        self.set_active_player(state[0])
+
+    def set_active_player(self, player_id):
+        self.active_player = player_id
     
-    def get_next_state(self, state_t, action):
-        next_state = self.state_t + action
+    def change_player(self):
+        self.active_player = (self.active_player + 1) % 3 + 1
+    
+    def get_next_player(self, active_player = self.active_player):
+        return (active_player + 1) % 3 + 1
+
+    def get_next_state(self, state_t = self.state, action):
+        #return the state t1 from state t taken action t. NB: This will not update the state of the board
+        next_state = self.state_t[0, 1:] + action
+        next_state[0] = self.get_next_player()
         return next_state
 
     def populate_board(self):
         #Generate all the board nodes
-        state = np.zeros((self.size, self.size))
+        self.state = np.zeros((1, self.size**2 + 1))
         for i in range(self.size):
             for j in range(self.size):
-                is_empty = False
-                node = Node((i,j), is_empty)   
+                node = Node((i,j))   
                 self.pawns[(i,j)] = node
-        self.state_t = state 
+        for coordinate in self.pawns:
+            self.find_valid_neighbours(self.pawns[coordinate])
       
     def to_numpy_array(self):
         #Convert the board to a numpy array, so that can be visualized.
@@ -108,9 +133,6 @@ class Board:
             node[1]["is_empty"] = self.pawns[coordinates].is_empty
             node[1]["is_selected"] = self.pawns[coordinates].is_selected
             node[1]["is_being_eaten"] = self.pawns[coordinates].is_being_eaten
-
-
-
 
     def show_board(self):
         #Plot the graph nodes and edges  with regards of plans (1 different plan per row), then do the necessary flipping and rotation for matching the board to the assigment
@@ -161,18 +183,6 @@ class Board:
         bufffer.seek(0)
         return Image.open(bufffer)
     
-    def update_state(self):
-        #Iterate through all the pawns (nodes) and fill the string representing the state with 0 if that peg is empty or 1 if is not
-        state =''
-        for coordinate in self.pawns:
-            node = self.pawns[coordinate]
-            if node.is_empty:
-                state = state + '0'
-            else:
-                state = state + '1'
-        self.state_t = state
-
-
     def find_all_legal_actions(self):
         #Analize the board and check all possible actions. 
         all_actions = list(())
@@ -187,40 +197,63 @@ class Board:
             print("all legal actions: " + str(len(all_actions)))
             for action in all_actions:
                 print(action)
-        return all_actions
+        self.possible_actions =  all_actions
                     
+    def get_all_possible_actions(self):
+        return self.possible_actions
+
     def is_goal_state(self):
+        #Start a DFS from each node on the active player side and check if there is a path to the other side
+        visited_nodes = list()
+        i=0
+        if self.active_player == 1:
+            start_coordinate = (0, i)
+        else:
+            start_coordinate = (i, 0)
+        for i in range(self.size):
+            node = self.pawns[start_coordinate]
+            if (node.populated_by == self.active_player) and (node not in visited_nodes):
+                is_win = DFS_path_check(node, visited_nodes)
+        return is_win
+
+    def DFS_path_check(node, visited_nodes):
+        #Perform recursive DFS with a list of visited nodes and domain specific terminal path settings.
+        visited_nodes.append(node)
+        if node.coordinate[0] == self.size - 1 and self.active_player == 1:
+            return True
+        elif node.coordinate[1] == self.size - 1 and self.active_player == 2:
+            return True    
+        for adj_node in node.neighboards:
+            if (adj_node.populated_by == self.active_player) and (adj_node not in visited_nodes):
+                is_terminal_path = DFS_path_check(adj_node, visited_nodes)
+            if is_terminal_path:
+                return True
         return False
-    
-    def get_reward(self, player_id):
+
+    def get_reward(self):
         #return reward for being in state self.state_t at time t for player_id
         if self.is_goal_state():
-            if self.active_player == player_id:
+            if self.active_player == 1:
                 return 1
             return -1
-        return 0
-        
+        return 0        
 
     def update(self, action):
         #Apply the action to the board and change interested nodes propriety such that it can be visualized 
         #return a tuple of img frames with the first being the selected action and second the new board state
-        selected_node = action[0]
-        offer = selected_node.neighbours[action[1]]
-        empty_node = offer.neighbours[action[1]]
-        if self.visualize:
-            self.move_counter = self.move_counter + 1
-            selected_node.is_selected = True
-            offer.is_being_eaten = True
-            self.update_graph()
-            frame_1 = self.show_board()
-            selected_node.is_selected = False
-            offer.is_being_eaten = False
-        selected_node.is_empty = True
-        offer.is_empty= True
-        empty_node.is_empty = False
-        self.update_state()
+        
+        self.set_state(self.get_next_state(action))
+        for i in rage(action.shape[1]):
+            if action[0, i] == self.active_player:
+                move_coordinates_1d = i
+                break
+        move_coordinates_2d_y = move_coordinates_1d // self.size
+        move_coordinates_2d_x = move_coordinates_1d % self.size
+        self.pawns[move_coordinates_2d_y, move_coordinates_2d_x].populated_by = self.active_player
+        self.set_active_player(self.change_player())
+        self.find_all_legal_actions()
         if self.visualize:
             self.update_graph()
-            frame_2 = self.show_board()
-            return (frame_1, frame_2)
+            frame = self.show_board()
+            return frame
         return None

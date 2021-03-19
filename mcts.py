@@ -60,6 +60,7 @@ class MTCS():
             #If the node has been sampled before, expand it, select the first of the childrens and run a rollout and backpropagation
             if pointer.total_visits > 0:
                 self.expand_leaf(pointer)
+                #Bruk aktoren?
                 pointer = pointer.childrens[pointer.childrens.keys[0]]
                 self.board.set_state(pointer.state)
             reward = self.rollout(pointer)
