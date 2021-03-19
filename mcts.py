@@ -1,6 +1,6 @@
 import math
 import simworld
-
+import copy
 class MTCS_node():
     
     def __init__(self, state, action, parent):
@@ -37,56 +37,67 @@ class MTCS_node():
 
 class MTCS():
 
-    def __init__(self, init_state, simworld, player, actor,  cfg):
+    def __init__(self, init_state, player, actor,  cfg):
         self.actor = actor
         self.init_state = init_state
         self.root = self.import_node(init_state)
         self.epsilon = cfg["epsilon"]
         self.number_of_simulations = cfg["number_of_simulations"]
-        self.simworld = simworld.board(cfg["board_size"], False)
-        self.active_player = player
-        #TODO: Update the board with the root state
+        self.board = simworld.board(cfg["board_size"], False)
+        self.initialize_board()
+    
+    def initialize_board(self):
+        self.board.set_state(self.init_state, True)
 
     def run_simulation(self):
         simulation = 1
         pointer = self.root
-        self.board.set_state(pointer.state)
+        cached_simulation_board = copy.deepcopy(self.board)
+        #self.board.set_state(pointer.state)
         while simulation < self.number_of_simulations:
             #Check wether pointer points to a leaf node
             #While the node is not a leaf node, point to the next one using the active player and tree policy
             while not pointer.isLeaf:
-                pointer = self.choose_next_node(pointer)
-                self.board.set_state(pointer.state)
+                action = self.choose_next_node(pointer)
+                self.board.update(action)
+                next_node = pointer.childrens[action]
+                next_node.parent = pointer
+                pointer = next_node
             #If the node has been sampled before, expand it, select the first of the childrens and run a rollout and backpropagation
             if pointer.total_visits > 0:
                 self.expand_leaf(pointer)
                 #Bruk aktoren?
-                pointer = pointer.childrens[pointer.childrens.keys[0]]
-                self.board.set_state(pointer.state)
-            reward = self.rollout(pointer)
+                action = pointer.childrens.keys[0]
+                self.board.update(action)
+                next_node = pointer.childrens[action]
+                next_node.parent = pointer
+                pointer = next_node
+
+            #Cache the state of the tree before starting the rollout
+            reward = self.rollout()
             self.backpropagate(reward, pointer)
             simulation += 1
+            self.board = cached_simulation_board
         suggested_action = self.get_suggested_action()
         self.prune_tree(suggested_action)
+        del cached_simulation_board
         return suggested_action
 
-    def get_suggested_action(self, state, possible_actions):
-        return self.actor.get_action(state, possible_actions)
+    def get_suggested_action(self, state = self.board.get_state(), possible_actions = self.board.get_all_possible_actions()):
+        return self.actor.get_action(state, possible_actions )
 
     def is_goal_state(self, state):
-        if self.board.is_goal_state():
-            return True
-        return False
+        return self.board.is_goal_state()
 
     def rollout(self, node):
         #From the leaf node, let the actor take some actions until reached goal node
-        state = node.state
-        self.board.set_state(state)
+        rollout_board = copy.deepcopy(self.board)
         while not is_goal_state():
-            possible_actions = self.board.find_all_legal_actions()
-            action = self.get_suggested_action(state, possible_actions)
-            self.board.update(action)
-        return self.board.get_reward()
+            action = self.get_suggested_action(rollout_board.get_state, rollout_board.get_all_possible_actions())
+            rollout_board.update(action)
+        reward =  rollout_board.get_reward()
+        del rollout_board
+        return reward
     
     def backpropagate(self, reward, node)
         #Backpropagate reward
@@ -112,15 +123,14 @@ class MTCS():
         #Calculate usa values and do the best greedy choice relate to the player playing
         node.isLeaf = False
         tmp = dict()
-        if self.active_player == 1:
+        if self.board.active_player == 1:
             for action in node.q_values.keys:
                 tmp[action] = node.q_values[action] + self.calculate_usa(node, action) 
             choosen_action = max(tmp, key= tmp.get)
-        elif self.active_player == 2:
+        elif self.board.active_player == 2:
             for action in node.q_values.keys:
                 tmp[action] = node.q_values[action] - self.calculate_usa(node, action) 
             choosen_action = min(tmp, key= tmp.get)
-        self.change_player()
         return choosen_action
 
 
@@ -135,12 +145,10 @@ class MTCS():
         node = MTCS_node(state, None,  None)
         return node
 
-    def change_player(self):
-        self.active_player = (self.active_player + 1) % 3 + 1
-
     def prune_tree(self, action):
         #Prune the tree: remove the root status to the actual root, point to the children of old root via the action and make it the new root
         self.root.is_root = False
         new_root = self.root.childrens[action]
         new_root.is_root = True
         self.root = new_root
+        self.board.set_state(self.board.get_next_state(action=action), True)

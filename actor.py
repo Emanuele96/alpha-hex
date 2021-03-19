@@ -4,18 +4,18 @@ class Actor:
 
     def __init__(self):
         self.policy = {}
-        self.SAP_eligibilities = {}
+        '''self.SAP_eligibilities = {}
         self.e_greedy = variables.e_actor_start
         self.lr = variables.lr_actor
         self.eligibility_decay = variables.eligibility_decay_actor
         self.discount = variables.discount_actor
         self.SAPs_in_episode = list(())
         self.counter = 0 
-        random.seed(variables.random_seed_actor)
+        random.seed(variables.random_seed_actor)'''
 
     def get_action(self, state, possible_actions):
       
-        #Get all SAP for the given state
+        '''#Get all SAP for the given state
         if random.uniform(0,1) <= self.e_greedy:
             #Do a greedy choice
             choosen_action = random.choice(possible_actions)
@@ -29,7 +29,8 @@ class Actor:
                     choosen_action = action
                     max_policy_value = policy_value
 
-        return choosen_action
+        return choosen_action'''
+        return possible_actions[0]
 
     def update(self, state_t, action_t, TD_error):
         #Get updated TD-error, update policy and eligibilities

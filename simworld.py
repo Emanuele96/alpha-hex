@@ -51,21 +51,32 @@ class Board:
         #Reset the board
         self.visualize = visualize
         self.move_counter = 0
-        for node in self.pawns.values():
-            node.empty_the_node()
+        self.remove_all_pawns()
         self.set_state(self.initial_state)
         if self.visualize:
             self.graph = self.generate_graph()
+
+    def remove_all_pawns(self):
+        for node in self.pawns.values():
+            node.empty_the_node()
     
     def get_state(self):
         return self.state_t
 
-    def set_state(self, state):
+    def set_state(self, state, recompute_population = False):
         self.state_t = state
         self.set_active_player(state[0])
+        if recompute_population:
+            for i in range(state.shape[1]-1):
+                coordinates_1d = i + 1
+                coordinates_2d_y = move_coordinates_1d // self.size
+                coordinates_2d_x = move_coordinates_1d % self.size
+                self.pawns[coordinates_2d_y, coordinates_2d_x].populated_by = state[coordinates_1d]
+        self.compute_all_possible_actions()
+
     
-    def change_player(self):
-        self.active_player = (self.active_player + 1) % 3 + 1
+    def set_active_player(self, player_id):
+        self.active_player = player_id
     
     def get_next_player(self, active_player = self.active_player):
         return (active_player + 1) % 3 + 1
@@ -183,7 +194,7 @@ class Board:
         bufffer.seek(0)
         return Image.open(bufffer)
     
-    def find_all_legal_actions(self):
+    def compute_all_possible_actions(self):
         #Analize the board and check all possible actions. 
         all_actions = list(())
         board_state = self.state_t.shape[0, 1:]
@@ -243,15 +254,15 @@ class Board:
         #return a img frame of the new board stat  
         if action is not None:
             self.set_state(self.get_next_state(action))
-            for i in rage(action.shape[1]):
+            for i in range(action.shape[1]):
                 if action[0, i] == self.active_player:
                     move_coordinates_1d = i
                     break
             move_coordinates_2d_y = move_coordinates_1d // self.size
             move_coordinates_2d_x = move_coordinates_1d % self.size
             self.pawns[move_coordinates_2d_y, move_coordinates_2d_x].populated_by = self.active_player
-        self.change_player()
-        self.find_all_legal_actions()
+            self.set_active_player(self.get_next_player())
+        self.compute_all_possible_actions()
         if self.visualize:
             self.update_graph()
             frame = self.show_board()
