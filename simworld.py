@@ -250,6 +250,7 @@ class Board:
             is_terminal_path = False
             if (adj_node.populated_by == self.active_player) and (adj_node not in visited_nodes):
                 is_terminal_path = self.DFS_path_check(adj_node, visited_nodes)
+                
             if is_terminal_path:
                 return True
         return False

@@ -115,6 +115,9 @@ class MTCS():
                 print("##### State ", rollout_board.get_state())
                 print("##### Choosen Action ", action)
             rollout_board.update(action)
+            if self.verbose:
+                print("#####GOAL?", rollout_board.is_goal_state())
+                print(rollout_board.get_state()[0,1:].reshape(1,rollout_board.size, rollout_board.size))
         reward =  rollout_board.get_reward()
         del rollout_board
         return reward
