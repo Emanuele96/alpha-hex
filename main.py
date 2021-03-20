@@ -28,7 +28,6 @@ if __name__ == "__main__":
 
     board = simworld.Board(cfg["board_size"], False, False)
     actor = actor.Actor()
-    print("main state ", board.get_state())
     mcts = mcts.MTCS(board.get_state(), actor, cfg)
     while not board.is_goal_state():
         possible_actions = board.get_all_possible_actions()

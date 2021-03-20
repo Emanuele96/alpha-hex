@@ -27,6 +27,7 @@ class Board:
         self.move_counter = 0
         self.populate_board()
         self.possible_actions = None
+        self.compute_all_possible_actions()
         self.graph = None
         self.visualize = visualize
         if self.visualize:
@@ -86,6 +87,7 @@ class Board:
             return 1
 
     def get_next_state(self, action,  state_t = None):
+        next_player = self.get_next_player()
         if state_t is None:
             state_t = self.state_t
         #return the state t1 from state t taken action t. NB: This will not update the state of the board
@@ -94,7 +96,7 @@ class Board:
             #TODO implement raise exception
         next_state = np.zeros(self.state_t.shape) + self.state_t
         next_state[:, 1:] += action
-        next_state[0,0] = self.get_next_player()
+        next_state[0,0] = next_player
         print("next state ", next_state)
         return next_state
 
@@ -204,23 +206,22 @@ class Board:
     
     def compute_all_possible_actions(self):
         #Analize the board and check all possible actions. 
-        print("active player", self.active_player)
+        #print("active player", self.active_player)
         all_actions = list(())
         tot_possible_actions = self.size**2
         for i in range(tot_possible_actions):
-            print(self.state_t.shape)
             if self.state_t[0, i+1] == 0:
                 action = np.zeros((1, tot_possible_actions))
                 action[0, i] = self.active_player
                 all_actions.append(action)                         
-        if self.verbose:
+        '''if self.verbose:
             print("all legal actions: " + str(len(all_actions)))
             for action in all_actions:
-                print(action)
+                print(action)'''
         self.possible_actions =  all_actions
                     
     def get_all_possible_actions(self):
-        print("all possible actions saved", self.possible_actions)
+        #print("all possible actions saved", self.possible_actions)
         return self.possible_actions
 
     def is_goal_state(self):
@@ -260,23 +261,25 @@ class Board:
                 return 1
             return -1
         return 0        
+    def populate_pawn(self,action, player_id):
+        #Populate pawn with player_id dictated by action
+        for i in range(action.shape[1]):
+            if action[0, i] == player_id:
+                move_coordinates_1d = i
+                break
+        move_coordinates_2d_y = move_coordinates_1d // self.size
+        move_coordinates_2d_x = move_coordinates_1d % self.size
+        self.pawns[move_coordinates_2d_y, move_coordinates_2d_x].populated_by = player_id
 
     def update(self, action):
         #Apply the action to the board and change interested nodes propriety such that it can be visualized 
         #return a img frame of the new board stat  
         if action is not None:
+            self.populate_pawn(action, self.active_player )
             self.set_state(self.get_next_state(action))
+            move_coordinates_1d = None
             print("updated action", action)
             print("state", self.state_t)
-            for i in range(action.shape[1]):
-                if action[0, i] == self.active_player:
-                    move_coordinates_1d = i
-                    break
-            move_coordinates_2d_y = move_coordinates_1d // self.size
-            move_coordinates_2d_x = move_coordinates_1d % self.size
-            self.pawns[move_coordinates_2d_y, move_coordinates_2d_x].populated_by = self.active_player
-            self.set_active_player(self.get_next_player())
-        self.compute_all_possible_actions()
         if self.visualize:
             self.update_graph()
             frame = self.show_board()

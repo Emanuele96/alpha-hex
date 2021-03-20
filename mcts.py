@@ -44,7 +44,8 @@ class MTCS():
         self.epsilon = cfg["epsilon"]
         self.number_of_simulations = cfg["number_of_simulations"]
         self.board = simworld.Board(cfg["board_size"], False, False)
-        self.initialize_board()
+        #self.initialize_board()
+        self.verbose = cfg["verbose"]
     
     def initialize_board(self):
         self.board.set_state(self.init_state, True)
@@ -55,11 +56,14 @@ class MTCS():
         cached_simulation_board = copy.deepcopy(self.board)
         #self.board.set_state(pointer.state)
         while simulation < self.number_of_simulations:
-            print("simulation nr ", simulation)
+            if self.verbose:
+                print("### Beginning simulation nr ", simulation, ", starting at root")
             pointer = self.root
             #Check wether pointer points to a leaf node
             #While the node is not a leaf node, point to the next one using the active player and tree policy
             while not pointer.is_leaf:
+                if self.verbose:
+                    print("Not leaf node, select next node with tree policy")
                 action = self.choose_next_node(pointer)
                 self.board.update(action)
                 next_node = pointer.childrens[action]
@@ -67,6 +71,8 @@ class MTCS():
                 pointer = next_node
             #If the node has been sampled before, expand it, select the first of the childrens and run a rollout and backpropagation
             if pointer.total_visits > 0:
+                if self.verbose:
+                    print("### Leaf node sampled before. Expanding Node and selecting a child.")
                 self.expand_leaf(pointer)
                 #Bruk aktoren?
                 if len(pointer.childrens)== 0:
@@ -76,8 +82,11 @@ class MTCS():
                 self.board.update(action)
                 pointer = pointer.childrens[action]
 
-            #Cache the state of the tree before starting the rollout
+            if self.verbose:
+                print("### Starting rollout from ", pointer)
             reward = self.rollout(pointer)
+            if self.verbose:
+                print("### Rollout result ", reward, ". Backpropagating till root")
             self.backpropagate(reward, pointer)
             simulation += 1
             self.board = cached_simulation_board
@@ -86,12 +95,10 @@ class MTCS():
         del cached_simulation_board
         return suggested_action
 
-    def get_suggested_action(self, state = None, possible_actions = None):
-        if state is None:
-            state = self.board.get_state()
-        if possible_actions is None:
-            possible_actions = self.board.get_all_possible_actions()
-        return self.actor.get_action(state, possible_actions)
+    def get_suggested_action(self, board = None):
+        if board is None:
+            board = self.board
+        return self.actor.get_action(board.get_state(), board.get_all_possible_actions())
 
     def is_goal_state(self, state):
         return self.board.is_goal_state()
@@ -99,8 +106,14 @@ class MTCS():
     def rollout(self, node):
         #From the leaf node, let the actor take some actions until reached goal node
         rollout_board = copy.deepcopy(self.board)
+        i = 1
         while not rollout_board.is_goal_state():
-            action = self.get_suggested_action(rollout_board.get_state, rollout_board.get_all_possible_actions())
+            action = self.get_suggested_action(rollout_board)
+            if self.verbose:
+                print("#### Roll nr ", i)
+                i += 1
+                print("##### State ", rollout_board.get_state())
+                print("##### Choosen Action ", action)
             rollout_board.update(action)
         reward =  rollout_board.get_reward()
         del rollout_board
