@@ -259,6 +259,8 @@ class Board:
             node = self.pawns[start_coordinate(i)]
             if (node.populated_by == self.active_player) and (node not in visited_nodes):
                 is_win = self.DFS_path_check(node, visited_nodes, win_path)
+            if is_win:
+                break
         if self.verbose:
             print(self.get_state()[0,1:].reshape(1,self.size, self.size))
             print("#####Is Goal State? ", is_win)

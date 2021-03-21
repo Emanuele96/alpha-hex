@@ -60,14 +60,17 @@ class MTCS():
             if self.verbose:
                 print("### Begin simulation nr ", simulation, ", starting at root")
             pointer = self.root
+            self.board.set_state(self.root.state, True)
             #Check wether pointer points to a leaf node
             #While the node is not a leaf node, point to the next one using the active player and tree policy
             while not pointer.is_leaf:
                 if self.verbose:
                     print("Not leaf node, select next node with tree policy")
-                action = self.choose_next_node(pointer)
+                hashed_action = self.choose_next_node(pointer)
+                action = np.expand_dims(np.asarray(hashed_action), axis=0)
                 self.board.update(action)
-                next_node = pointer.childrens[action]
+                self.board.change_player()
+                next_node = pointer.childrens[hashed_action]
                 next_node.parent = pointer
                 pointer = next_node
             #If the node has been sampled before, expand it, select the first of the childrens and run a rollout and backpropagation
@@ -78,10 +81,13 @@ class MTCS():
                 #Bruk aktoren?
                 if len(pointer.childrens)== 0:
                     #What to do if reached a goal state before rollout?
-                    break
+                    if self.verbose:
+                        print("##### Reached goal node before rollout")
+                    #break
                 hashed_action = next(iter(pointer.childrens))
                 action = np.expand_dims(np.asarray(hashed_action), axis=0)
                 self.board.update(action)
+                self.board.change_player()
                 pointer = pointer.childrens[hashed_action]
             elif self.verbose:
                 print("### Leaf node never sampled before.")
@@ -132,28 +138,27 @@ class MTCS():
         #Backpropagate reward
         #First, the leaf node: No branches, update only visits count
         pointer = node
-        print("pointer", pointer)
         pointer.increase_total_visits()
-        i = 0
         while not pointer.is_root:
-            print(pointer.parent)
+            print("Herereee", pointer.parent.is_root)
             #While pointing a non root node, cache the action used to get to the node, go to his parent and update values
-            action_used = node.action
-            pointer = node.parent
+            action_used = pointer.action
+            pointer = pointer.parent
             pointer.increase_total_visits()
             pointer.increase_branch_visit(action_used)
             pointer.increase_total_amount(action_used, reward)
             pointer.update_q_value(action_used)
+            
 
     def expand_leaf(self, node):
+        if self.verbose:
+            print("##### Expanding Node ", node)
         possible_actions = self.board.get_all_possible_actions()
         for action in possible_actions:
-            tmp_state = self.board.get_next_state(action=action, change_player=True)
-            tmp_node = MTCS_node(tmp_state, action, node)
-            tmp_node.parent = node
             #Action is a np array and as list are unhashable. A key for a dict must be hashable, so convert to bytes (action.tobytes()) or tuple(action))
             hashable_action = tuple(action[0])
-            tmp_node.action = hashable_action
+            tmp_state = self.board.get_next_state(action=action, change_player=True)
+            tmp_node = MTCS_node(tmp_state, hashable_action, node)
             node.childrens[hashable_action]= tmp_node
             node.q_values[hashable_action] = 0
             node.stats[hashable_action] = 0
@@ -162,13 +167,15 @@ class MTCS():
     
     def choose_next_node(self, node):
         #Calculate usa values and do the best greedy choice relate to the player playing
+        if self.verbose:
+            print("##### Choosing next Node")
         tmp = dict()
         if self.board.active_player == 1:
-            for action in node.q_values.keys:
+            for action in node.q_values:
                 tmp[action] = node.q_values[action] + self.calculate_usa(node, action) 
             choosen_action = max(tmp, key= tmp.get)
         elif self.board.active_player == 2:
-            for action in node.q_values.keys:
+            for action in node.q_values:
                 tmp[action] = node.q_values[action] - self.calculate_usa(node, action) 
             choosen_action = min(tmp, key= tmp.get)
         return choosen_action
