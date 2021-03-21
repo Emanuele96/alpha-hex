@@ -74,9 +74,9 @@ class MTCS():
                 next_node.parent = pointer
                 pointer = next_node
             #If the node has been sampled before, expand it, select the first of the childrens and run a rollout and backpropagation
-            if pointer.total_visits > 0:
+            if pointer.total_visits > 0 or pointer.is_root:
                 if self.verbose:
-                    print("### Leaf node sampled before. Expanding Node and selecting a child.")
+                    print("### Leaf node sampled before or is root. Expanding Node and selecting a child.")
                 self.expand_leaf(pointer)
                 #Bruk aktoren?
                 if len(pointer.childrens)== 0:
@@ -99,13 +99,19 @@ class MTCS():
                 print("### Rollout result ", reward, ". Backpropagating till root")
             self.backpropagate(reward, pointer)
             simulation += 1
-            self.board = cached_simulation_board
-        suggested_action = self.get_suggested_action()
-        self.prune_tree(suggested_action)
+            self.board = copy.deepcopy(cached_simulation_board)
+        suggested_action = self.get_actions_distribution()
         del cached_simulation_board
         return suggested_action
+    def get_actions_distribution(self):
+        #get a normalized distribution of all actions from root
+        distribution = dict()
+        for branch in self.root.stats:
+            distribution[branch] = self.root.stats[branch] / self.root.total_visits
+        return distribution
 
     def get_suggested_action(self, board = None):
+        #Use actor policy to select the next action
         if board is None:
             board = self.board
         possible_actions = board.get_all_possible_actions()
@@ -129,7 +135,6 @@ class MTCS():
                 print("##### Active Player: ", rollout_board.active_player)
                 print("##### Choosen Action: ", action)
             rollout_board.update(action)
-        print("fffffffffffffff", rollout_board.active_player)
         reward =  rollout_board.get_reward()
         del rollout_board
         return reward
@@ -140,7 +145,6 @@ class MTCS():
         pointer = node
         pointer.increase_total_visits()
         while not pointer.is_root:
-            print("Herereee", pointer.parent.is_root)
             #While pointing a non root node, cache the action used to get to the node, go to his parent and update values
             action_used = pointer.action
             pointer = pointer.parent
@@ -196,8 +200,9 @@ class MTCS():
     def prune_tree(self, action):
         #Prune the tree: remove the root status to the actual root, point to the children of old root via the action and make it the new root
         self.root.is_root = False
-        new_root = self.root.childrens[action]
+        hashed_action = tuple(action[0])
+        new_root = self.root.childrens[hashed_action]
         new_root.is_root = True
         self.root = new_root
         self.board.set_state(self.board.get_next_state(action=action), True)
-        self.board.compute_all_possible_actions()
+        self.board.change_player()

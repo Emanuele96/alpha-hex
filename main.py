@@ -3,6 +3,7 @@ import json
 import actor
 import mcts
 import simworld
+import numpy as np
 
 # Tools 
 def read_config_from_json(filename):
@@ -31,6 +32,11 @@ if __name__ == "__main__":
     mcts = mcts.MTCS(board.get_state(), actor, cfg)
     while not board.is_goal_state():
         #possible_actions = board.get_all_possible_actions()
-        choosen_action = mcts.run_simulation()
+        action_distribution = mcts.run_simulation()
+        hashed_action = max(action_distribution, key= action_distribution.get)
+        choosen_action = np.expand_dims(np.asarray(hashed_action), axis=0)
+        print(choosen_action)
         board.update(choosen_action)
+        board.change_player()
+        mcts.prune_tree(choosen_action)
     print(board.get_reward())

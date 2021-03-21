@@ -1,5 +1,5 @@
 {
-    "verbose" : true,
+    "verbose" : false,
     "board_visualize": false, 
     "board_size" : 5,
     "episode_number": 200,
