@@ -43,7 +43,7 @@ class MTCS():
         self.root = self.import_state(init_state)
         self.epsilon = cfg["epsilon"]
         self.number_of_simulations = cfg["number_of_simulations"]
-        self.board = simworld.Board(cfg["board_size"], False, False)
+        self.board = simworld.Board(cfg["board_size"], False, cfg["verbose"])
         #self.initialize_board()
         self.verbose = cfg["verbose"]
     
@@ -52,12 +52,12 @@ class MTCS():
 
     def run_simulation(self):
         simulation = 1
-        pointer = self.root
+        #pointer = self.root
+        #Cache the board. This will be the same for each simulation
         cached_simulation_board = copy.deepcopy(self.board)
-        #self.board.set_state(pointer.state)
         while simulation < self.number_of_simulations:
             if self.verbose:
-                print("### Beginning simulation nr ", simulation, ", starting at root")
+                print("### Begin simulation nr ", simulation, ", starting at root")
             pointer = self.root
             #Check wether pointer points to a leaf node
             #While the node is not a leaf node, point to the next one using the active player and tree policy
@@ -78,9 +78,10 @@ class MTCS():
                 if len(pointer.childrens)== 0:
                     break
                 action = next(iter(pointer.childrens))
-                print(action)
                 self.board.update(action)
                 pointer = pointer.childrens[action]
+            elif self.verbose:
+                print("### Leaf node never sampled before.")
 
             if self.verbose:
                 print("### Starting rollout from ", pointer)
@@ -98,7 +99,8 @@ class MTCS():
     def get_suggested_action(self, board = None):
         if board is None:
             board = self.board
-        return self.actor.get_action(board.get_state(), board.get_all_possible_actions())
+        possible_actions = board.get_all_possible_actions()
+        return self.actor.get_action(board.get_state(), possible_actions)
 
     def is_goal_state(self, state):
         return self.board.is_goal_state()
@@ -108,16 +110,17 @@ class MTCS():
         rollout_board = copy.deepcopy(self.board)
         i = 1
         while not rollout_board.is_goal_state():
+            if i > 1:
+                rollout_board.change_player()
             action = self.get_suggested_action(rollout_board)
             if self.verbose:
                 print("#### Roll nr ", i)
                 i += 1
-                print("##### State ", rollout_board.get_state())
-                print("##### Choosen Action ", action)
+                print("##### Actual State: ", rollout_board.get_state())
+                print("##### Active Player: ", rollout_board.active_player)
+                print("##### Choosen Action: ", action)
             rollout_board.update(action)
-            if self.verbose:
-                print("#####GOAL?", rollout_board.is_goal_state())
-                print(rollout_board.get_state()[0,1:].reshape(1,rollout_board.size, rollout_board.size))
+        print("fffffffffffffff", rollout_board.active_player)
         reward =  rollout_board.get_reward()
         del rollout_board
         return reward
@@ -140,6 +143,7 @@ class MTCS():
             pointer.update_q_value(action_used)
 
     def expand_leaf(self, node):
+        self.board.compute_all_possible_actions()
         possible_actions = self.board.get_all_possible_actions()
         for action in possible_actions:
             tmp_state = self.board.get_next_state(action=action)
@@ -179,3 +183,4 @@ class MTCS():
         new_root.is_root = True
         self.root = new_root
         self.board.set_state(self.board.get_next_state(action=action), True)
+        self.board.compute_all_possible_actions()
