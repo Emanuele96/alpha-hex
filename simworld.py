@@ -91,20 +91,22 @@ class Board:
         #Use this to change player outside this class
         self.set_active_player(self.get_next_player()) 
 
-    def get_next_state(self, action,  state_t = None):
+    def get_next_state(self, action,  state_t = None, change_player = False):
         #return the state t1 from state t taken action t. NB: This will not update the state of the board
         if state_t is None:
             state_t = self.state_t
-        possible_actions = self.get_all_possible_actions()
+        #possible_actions = self.get_all_possible_actions()
         '''print(possible_actions == action)
         if action not in possible_actions:
             return None
             #TODO implement raise exception'''
         next_state = np.zeros(self.state_t.shape) + self.state_t
         next_state[:, 1:] += action
-        #next_state[0,0] = next_player
+        if change_player:
+            next_player = self.get_next_player()
+            next_state[0,0] = next_player
         if self.verbose:
-            print("Next state ", next_state)
+            print("Get next state ", next_state)
         return next_state
 
     def populate_board(self):

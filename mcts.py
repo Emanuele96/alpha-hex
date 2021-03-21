@@ -1,6 +1,7 @@
 import math
 import simworld
 import copy
+import numpy as np
 class MTCS_node():
     
     def __init__(self, state, action, parent):
@@ -76,10 +77,12 @@ class MTCS():
                 self.expand_leaf(pointer)
                 #Bruk aktoren?
                 if len(pointer.childrens)== 0:
+                    #What to do if reached a goal state before rollout?
                     break
-                action = next(iter(pointer.childrens))
+                hashed_action = next(iter(pointer.childrens))
+                action = np.expand_dims(np.asarray(hashed_action), axis=0)
                 self.board.update(action)
-                pointer = pointer.childrens[action]
+                pointer = pointer.childrens[hashed_action]
             elif self.verbose:
                 print("### Leaf node never sampled before.")
 
@@ -143,11 +146,18 @@ class MTCS():
             pointer.update_q_value(action_used)
 
     def expand_leaf(self, node):
-        self.board.compute_all_possible_actions()
         possible_actions = self.board.get_all_possible_actions()
         for action in possible_actions:
-            tmp_state = self.board.get_next_state(action=action)
+            tmp_state = self.board.get_next_state(action=action, change_player=True)
             tmp_node = MTCS_node(tmp_state, action, node)
+            tmp_node.parent = node
+            #Action is a np array and as list are unhashable. A key for a dict must be hashable, so convert to bytes (action.tobytes()) or tuple(action))
+            hashable_action = tuple(action[0])
+            tmp_node.action = hashable_action
+            node.childrens[hashable_action]= tmp_node
+            node.q_values[hashable_action] = 0
+            node.stats[hashable_action] = 0
+            node.total_value[hashable_action] = 0
         node.is_leaf = False
     
     def choose_next_node(self, node):
