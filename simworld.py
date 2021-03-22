@@ -50,16 +50,16 @@ class Board:
     def reset(self, visualize):
         #Reset the board
         self.visualize = visualize
-        self.move_counter = 0
-        self.remove_all_pawns()
-        self.set_state(self.initial_state)
-        self.compute_all_possible_actions()
+        #self.move_counter = 0
+        #self.remove_all_pawns()
+        self.set_state(self.initial_state, True)
+        #self.compute_all_possible_actions()
         if self.visualize:
             self.graph = self.generate_graph()
 
-    def remove_all_pawns(self):
+    ''' def remove_all_pawns(self):
         for node in self.pawns.values():
-            node.empty_the_node()
+            node.empty_the_node()'''
     
     def get_state(self):
         return self.state_t

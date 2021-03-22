@@ -38,7 +38,7 @@ class MTCS_node():
 
 class MTCS():
 
-    def __init__(self, init_state, actor,  cfg):
+    def __init__(self, init_state, actor, replay_buffer,  cfg):
         self.actor = actor
         self.init_state = init_state
         self.root = self.import_state(init_state)
@@ -46,14 +46,19 @@ class MTCS():
         self.number_of_simulations = cfg["number_of_simulations"]
         self.board = simworld.Board(cfg["board_size"], False, cfg["verbose"])
         self.initialize_board()
+        self.replay_buffer = replay_buffer
         self.verbose = cfg["verbose"]
     
     def initialize_board(self):
         self.board.set_state(self.init_state, True)
+        
+    def reset(self):
+        self.initialize_board()
+        self.root = self.import_state(self.init_state)
+
 
     def run_simulation(self):
         simulation = 1
-        print("simulation: ", simulation)
         #pointer = self.root
         #Cache the board. This will be the same for each simulation
         cached_simulation_board = copy.deepcopy(self.board)
@@ -101,9 +106,11 @@ class MTCS():
             self.backpropagate(reward, pointer)
             simulation += 1
             self.board = copy.deepcopy(cached_simulation_board)
-        suggested_action = self.get_actions_distribution()
+        action_distribution = self.get_actions_distribution()
         #del cached_simulation_board
-        return suggested_action
+        #Add training case to the replay buffer
+        self.replay_buffer.add_train_case((cached_simulation_board.get_state(), action_distribution))
+        return action_distribution
     def get_actions_distribution(self):
         #get a normalized distribution of all actions from root
         distribution = dict()
