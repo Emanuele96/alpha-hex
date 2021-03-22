@@ -72,7 +72,9 @@ class Board:
                 coordinates_1d = i
                 coordinates_2d_y = coordinates_1d // self.size
                 coordinates_2d_x = coordinates_1d % self.size
-                self.pawns[coordinates_2d_y, coordinates_2d_x].populated_by = state[0, coordinates_1d]
+                self.pawns[coordinates_2d_y, coordinates_2d_x].populated_by = state[0, coordinates_1d + 1]
+                #print("state v", state[0, coordinates_1d + 1])
+                #print("board position: ", [coordinates_2d_y, coordinates_2d_x])
         #self.compute_all_possible_actions()
 
     
@@ -232,9 +234,11 @@ class Board:
     def get_all_possible_actions(self):
         #Analize the board and check all possible actions. 
         #print("active player", self.active_player)
+        #print("all possible actions")
         all_actions = list(())
         tot_possible_actions = self.size**2
         for i in range(tot_possible_actions):
+            #print(self.state_t[0, i+1])
             if self.state_t[0, i+1] == 0:
                 action = np.zeros((1, tot_possible_actions))
                 action[0, i] = self.active_player
@@ -257,13 +261,16 @@ class Board:
         for i in range(self.size):
             #print("start coordinates", start_coordinate(i))
             node = self.pawns[start_coordinate(i)]
+            if self.verbose:
+                print("valuating node ",node.coordinates )
+                print("node populated by p", self.active_player, " ", node.populated_by == self.active_player)
             if (node.populated_by == self.active_player) and (node not in visited_nodes):
                 is_win = self.DFS_path_check(node, visited_nodes, win_path)
             if is_win:
                 break
         if self.verbose:
             print(self.get_state()[0,1:].reshape(1,self.size, self.size))
-            print("#####Is Goal State? ", is_win)
+            print("#####Is Goal State for p", self.active_player, "? ", is_win)
             if is_win:
                 print("##### Win Path: \n")
                 for node in reversed(win_path):
@@ -271,6 +278,8 @@ class Board:
         return is_win
 
     def DFS_path_check(self, node, visited_nodes,win_path):
+        if self.verbose:
+            print("DFS visited node ", node.coordinates)
         #Perform recursive DFS with a list of visited nodes and domain specific terminal path settings.
         visited_nodes.append(node)
         if node.coordinates[0] == self.size - 1 and self.active_player == 1:

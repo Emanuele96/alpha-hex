@@ -45,7 +45,7 @@ class MTCS():
         self.epsilon = cfg["epsilon"]
         self.number_of_simulations = cfg["number_of_simulations"]
         self.board = simworld.Board(cfg["board_size"], False, cfg["verbose"])
-        #self.initialize_board()
+        self.initialize_board()
         self.verbose = cfg["verbose"]
     
     def initialize_board(self):
@@ -58,9 +58,9 @@ class MTCS():
         cached_simulation_board = copy.deepcopy(self.board)
         while simulation < self.number_of_simulations:
             if self.verbose:
-                print("### Begin simulation nr ", simulation, ", starting at root")
+                print("### Begin simulation nr ", simulation, ", starting at root: ", self.root.state)
             pointer = self.root
-            self.board.set_state(self.root.state, True)
+            #self.board.set_state(self.root.state, True)
             #Check wether pointer points to a leaf node
             #While the node is not a leaf node, point to the next one using the active player and tree policy
             while not pointer.is_leaf:
@@ -101,7 +101,7 @@ class MTCS():
             simulation += 1
             self.board = copy.deepcopy(cached_simulation_board)
         suggested_action = self.get_actions_distribution()
-        del cached_simulation_board
+        #del cached_simulation_board
         return suggested_action
     def get_actions_distribution(self):
         #get a normalized distribution of all actions from root
@@ -130,11 +130,11 @@ class MTCS():
             action = self.get_suggested_action(rollout_board)
             if self.verbose:
                 print("#### Roll nr ", i)
-                i += 1
                 print("##### Actual State: ", rollout_board.get_state())
                 print("##### Active Player: ", rollout_board.active_player)
                 print("##### Choosen Action: ", action)
             rollout_board.update(action)
+            i += 1
         reward =  rollout_board.get_reward()
         del rollout_board
         return reward
@@ -142,7 +142,9 @@ class MTCS():
     def backpropagate(self, reward, node):
         #Backpropagate reward
         #First, the leaf node: No branches, update only visits count
+        backpropagate_path = list()
         pointer = node
+        backpropagate_path.append(pointer)
         pointer.increase_total_visits()
         while not pointer.is_root:
             #While pointing a non root node, cache the action used to get to the node, go to his parent and update values
@@ -152,7 +154,12 @@ class MTCS():
             pointer.increase_branch_visit(action_used)
             pointer.increase_total_amount(action_used, reward)
             pointer.update_q_value(action_used)
-            
+            if self.verbose:
+                backpropagate_path.append(pointer)
+        if self.verbose:
+            print("####Backpropagation successfull. Backpropagate Path:\n")
+            for n in backpropagate_path:
+                print(n.state)
 
     def expand_leaf(self, node):
         if self.verbose:
@@ -204,5 +211,5 @@ class MTCS():
         new_root = self.root.childrens[hashed_action]
         new_root.is_root = True
         self.root = new_root
-        self.board.set_state(self.board.get_next_state(action=action), True)
-        self.board.change_player()
+        self.board.set_state(new_root.state, True)
+        #self.board.change_player()

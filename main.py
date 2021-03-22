@@ -30,13 +30,22 @@ if __name__ == "__main__":
     board = simworld.Board(cfg["board_size"], cfg["board_visualize"], cfg["verbose"])
     actor = actor.Actor()
     mcts = mcts.MTCS(board.get_state(), actor, cfg)
+    move = 1
+    print("*****************************************************")
+    print("Move nr. ", move, " - Player ", int(board.active_player))
+    print("Before\n", board.get_state()[0,1:].reshape(1, cfg["board_size"], cfg["board_size"]))
     while not board.is_goal_state():
-        #possible_actions = board.get_all_possible_actions()
+        if move > 1:
+            board.change_player()
+            mcts.prune_tree(choosen_action)
+            print("*****************************************************")
+            print("Move nr. ", move, " - Player ", int(board.active_player))
+            print("Before\n", board.get_state()[0,1:].reshape(1, cfg["board_size"], cfg["board_size"]))
         action_distribution = mcts.run_simulation()
         hashed_action = max(action_distribution, key= action_distribution.get)
         choosen_action = np.expand_dims(np.asarray(hashed_action), axis=0)
-        print(choosen_action)
         board.update(choosen_action)
-        board.change_player()
-        mcts.prune_tree(choosen_action)
-    print(board.get_reward())
+        move += 1
+        print("After\n", board.get_state()[0,1:].reshape(1, cfg["board_size"], cfg["board_size"]))
+    print("*****************************************************")
+    print("Episode Finished. Reward: ", board.get_reward())
