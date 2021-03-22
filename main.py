@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
 
     board = simworld.Board(cfg["board_size"], cfg["board_visualize"], cfg["verbose"])
-    actor = actor.Actor()
+    actor = actor.Actor(cfg)
     mcts = mcts.MTCS(board.get_state(), actor, cfg)
     move = 1
     print("*****************************************************")

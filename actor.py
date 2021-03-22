@@ -1,55 +1,75 @@
 import random
+import numpy as np
+import ann_model
+import torch.optim as optim
+import torch.nn as nn
+import torch
 class Actor:
 
-    def __init__(self):
-        self.policy = {}
-        '''self.SAP_eligibilities = {}
-        self.e_greedy = variables.e_actor_start
-        self.lr = variables.lr_actor
-        self.eligibility_decay = variables.eligibility_decay_actor
-        self.discount = variables.discount_actor
-        self.SAPs_in_episode = list(())
-        self.counter = 0 
-        random.seed(variables.random_seed_actor)'''
+    def __init__(self, cfg):
+            self.lr = cfg["anet_lr"]
+            self.use_cuda = cfg["use_cuda"]
+            if self.use_cuda and torch.cuda.is_available():
+                self.device = "cuda:0"
+            else:
+                self.device = "cpu"
+            self.nn_layers = cfg["anet_layers"]
+            self.input_size = cfg["board_size"] ** 2 + 1
+            self.model = ann_model.Net(self.input_size,self.nn_layers, self.use_cuda)
+            self.optimizer =  self.initiate_optim(cfg["anet_optim"])
+            self.loss = nn.MSELoss(reduction="mean")
+            
+
+    def initiate_optim(self, optim_name):
+        if optim_name == "sdg":
+            return optim.SGD(self.model.parameters(), lr=self.lr)
+        elif optim_name == "adam":
+            return optim.Adam(self.model.parameters(), lr=self.lr)
+        elif optim_name == "rms":
+            return optim.RMSprop(self.model.parameters(), lr=self.lr)
 
     def get_action(self, state, possible_actions):
-      
-        '''#Get all SAP for the given state
-        if random.uniform(0,1) <= self.e_greedy:
-            #Do a greedy choice
-            choosen_action = random.choice(possible_actions)
-        else:  
-            #Retrieve the SAP with the highest value
-            choosen_action = possible_actions[0]
-            max_policy_value =  self.policy.setdefault((state,possible_actions[0]), 0)
-            for action in possible_actions:
-                policy_value = self.policy.setdefault((state,action), 0)
-                if  policy_value > max_policy_value:
-                    choosen_action = action
-                    max_policy_value = policy_value
+        #Forward the state in the model and get a action distribution
+        state_tensor = torch.from_numpy(state)
+        action_distribution = self.model(state_tensor.float()).detach().numpy()
+        #Filter away the illegal actions and normalize
+        filtered_action_distribution = self.filter_action_distribution(action_distribution, possible_actions, state[0][0])
+        #Find the index corrisponding the action with the most visits. Gets the first one if multiple actions has the same visit value
+        choosen_action_index = np.where(filtered_action_distribution[0] == np.amax(filtered_action_distribution[0]))[0][0]
+        #Create a new action and popolate it with the active player code in the choosen_action_index position
+        choosen_action = np.zeros(possible_actions[0].shape)
+        choosen_action[0][choosen_action_index] = state[0][0]
+        return choosen_action
 
-        return choosen_action'''
-        #print("possible actions actor", possible_actions)
-        return possible_actions[0]
+    def filter_action_distribution(self, action_distribution, possible_actions, active_player):
+        #Remove the illegal action from the distribution and normalize the vector
+        # Create an empty mask
+        mask = np.zeros(possible_actions[0].shape)
+        # Fill up all the positions of legals actions
+        for action in possible_actions:
+            mask += action
+        # If player 2, remove 2 with 1 (np.where)
+        if active_player == 2:
+            mask[0] = mask[0] /2
+        # Apply the mask to the distribution, removing the non legal actions. Normalize the result
+        action_distribution[0] = np.multiply(action_distribution[0], mask[0])
+        norm_factor = sum(action_distribution[0])
+        if norm_factor == 0:
+            #When RELU activation used, the probability distribution can be zeroed after the mask has been applied. Take a random choice
+            random_action_index = random.randint(0, action_distribution.shape[1] - 1)
+            action_distribution[0][random_action_index] = 1
+        else:
+            action_distribution[0] = action_distribution[0] / sum(action_distribution[0])
+        return action_distribution
+        
 
+        return action_distribution
     def update(self, state_t, action_t, TD_error):
-        #Get updated TD-error, update policy and eligibilities
-        ## Set eligibility last state action pair to be 1
-        self.SAP_eligibilities[(state_t, action_t)] = 1
-
-        #Add the SAP in the list of SAPs seen in this episode
-        if (state_t, action_t) not in self.SAPs_in_episode:
-            self.SAPs_in_episode.append((state_t,action_t))
-
-        for SAP in self.SAPs_in_episode:
-            self.policy[SAP] =  self.policy.setdefault(SAP, 0) + self.lr * TD_error * self.SAP_eligibilities[SAP]
-            self.SAP_eligibilities[SAP] = self.eligibility_decay * self.discount * self.SAP_eligibilities[SAP]
+        return -1
         
     def reset(self):
-        self.counter = self.counter + 1
-        self.SAPs_in_episode.clear()
-        self.SAP_eligibilities.clear()
-        self.e_decay()
+        return -1
+        #self.e_decay()
 
     def e_decay(self):
         #Decay the e sigma factor for the e greedy strategy.

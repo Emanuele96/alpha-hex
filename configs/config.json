@@ -8,16 +8,17 @@
     "anet_layers": [
         {
             "neurons": 20,
-            "activation": "relu"
+            "activation": "tanh"
         },
         {
-            "neurons": 5,
-            "activation": "relu"
+            "neurons": 25,
+            "activation": "tanh"
         }
     ],
     "anet_optim" : "adam",
     "epsilon": 0.5,
     "number_of_simulations": 200,
     "number_cached_anet": 5,
-    "number_tournament_games": 100
+    "number_tournament_games": 100,
+    "use_cuda": false
 }

@@ -53,6 +53,7 @@ class MTCS():
 
     def run_simulation(self):
         simulation = 1
+        print("simulation: ", simulation)
         #pointer = self.root
         #Cache the board. This will be the same for each simulation
         cached_simulation_board = copy.deepcopy(self.board)
