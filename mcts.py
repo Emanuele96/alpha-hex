@@ -113,9 +113,13 @@ class MTCS():
         return action_distribution
     def get_actions_distribution(self):
         #get a normalized distribution of all actions from root
-        distribution = dict()
+        hashed_action = next(iter(self.root.childrens))
+        action = np.expand_dims(np.asarray(hashed_action), axis=0)
+        distribution = np.zeros(action.shape)
         for branch in self.root.stats:
-            distribution[branch] = self.root.stats[branch] / self.root.total_visits
+            action = np.expand_dims(np.asarray(branch), axis=0)
+            distribution += action * self.root.stats[branch]
+        distribution = distribution / self.root.total_visits
         return distribution
 
     def get_suggested_action(self, board = None):

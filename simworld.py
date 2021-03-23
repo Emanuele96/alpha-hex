@@ -318,7 +318,7 @@ class Board:
         #Apply the action to the board and change interested nodes propriety such that it can be visualized 
         #return a img frame of the new board stat  
         self.populate_pawn(action, self.active_player)
-        self.set_state(self.get_next_state(action))    
+        self.set_state(self.get_next_state(action), True)    
         #self.set_active_player(self.get_next_player())        
         if self.visualize:
             self.update_graph()

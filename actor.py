@@ -35,10 +35,12 @@ class Actor:
         #Filter away the illegal actions and normalize
         filtered_action_distribution = self.filter_action_distribution(action_distribution, possible_actions, state[0][0])
         #Find the index corrisponding the action with the most visits. Gets the first one if multiple actions has the same visit value
-        choosen_action_index = np.where(filtered_action_distribution[0] == np.amax(filtered_action_distribution[0]))[0][0]
+        choosen_action = self.get_max_action_from_distribution(filtered_action_distribution, state[0][0])
+        
+        '''choosen_action_index = np.where(filtered_action_distribution[0] == np.amax(filtered_action_distribution[0]))[0][0]
         #Create a new action and popolate it with the active player code in the choosen_action_index position
         choosen_action = np.zeros(possible_actions[0].shape)
-        choosen_action[0][choosen_action_index] = state[0][0]
+        choosen_action[0][choosen_action_index] = state[0][0]'''
         return choosen_action
 
     def filter_action_distribution(self, action_distribution, possible_actions, active_player):
@@ -62,17 +64,24 @@ class Actor:
             action_distribution[0] = action_distribution[0] / sum(action_distribution[0])
         return action_distribution
 
+    def get_max_action_from_distribution(self, distribution, player_id):
+        #Find the index corrisponding the action with the most visits. Gets the first one if multiple actions has the same visit value
+        choosen_action_index = np.where(distribution[0] == np.amax(distribution[0]))[0][0]
+        #Create a new action and popolate it with the active player code in the choosen_action_index position
+        choosen_action = np.zeros(distribution.shape)
+        choosen_action[0][choosen_action_index] = player_id
+        return choosen_action
+
     def train(self, x_train, y_train):
         for i in range(len(x_train)):
-            x_sample = torch.from_numpy(x_train[i])
-            y_label = torch.from_numpy(y_train[i])
+            x_sample = torch.from_numpy(x_train[i]).float()
+            y_label = torch.from_numpy(y_train[i]).float()
             y_prediction = self.model(x_sample)
             loss = self.loss_fn(y_prediction, y_label)
 
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
-        
     def reset(self):
         return -1
         #self.e_decay()

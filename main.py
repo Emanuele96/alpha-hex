@@ -1,7 +1,7 @@
 import argparse
 import json
 import actor
-import mcts
+import mcts as mc
 import simworld
 import replay_buffer
 import pickle
@@ -49,7 +49,11 @@ if __name__ == "__main__":
         buffer = replay_buffer.Replay_buffer()
     board = simworld.Board(cfg["board_size"], cfg["board_visualize"], cfg["verbose"])
     actor = actor.Actor(cfg)
-    mcts = mcts.MTCS(board.get_state(), actor, buffer, cfg)
+    mcts = mc.MTCS(board.get_state(), actor, buffer, cfg)
+
+    p1 = 0
+    p2 = 0
+
     for i in range(cfg["episodes"]):
         move = 1
         print("*****************************************************")
@@ -63,17 +67,29 @@ if __name__ == "__main__":
                 print("Move nr. ", move, " - Player ", int(board.active_player))
                 print("Before\n", board.get_state()[0,1:].reshape(1, cfg["board_size"], cfg["board_size"]))
             action_distribution = mcts.run_simulation()
-            hashed_action = max(action_distribution, key= action_distribution.get)
-            choosen_action = np.expand_dims(np.asarray(hashed_action), axis=0)
+            #hashed_action = max(action_distribution, key= action_distribution.get)
+            #choosen_action = np.expand_dims(np.asarray(hashed_action), axis=0)
+            choosen_action = actor.get_max_action_from_distribution(action_distribution, board.active_player)
+            
             board.update(choosen_action)
             move += 1
             print("After\n", board.get_state()[0,1:].reshape(1, cfg["board_size"], cfg["board_size"]))
+        reward = board.get_reward()
         print("*****************************************************")
-        print("Episode ", i, " Finished. Reward: ", board.get_reward())
-        board.reset(False)
-        mcts.reset()
+        print("Episode ", i, " Finished. Reward: ", reward )
+        if reward == 1:
+            p1 += 1
+        elif reward == -1:
+            p2 += 1
+
+        #board.reset(False)
+        #mcts.reset()
+        board = simworld.Board(cfg["board_size"], cfg["board_visualize"], cfg["verbose"])
+        mcts = mc.MTCS(board.get_state(), actor, buffer, cfg)
         x_train, y_train = buffer.get_training_dataset()
-        #actor.train(x_train, y_train)
+        actor.train(x_train, y_train)
+    print("All episodes run. The stats are:")
+    print("P1 won : ", p1, " P2 won : ", p2)
     print("Saving Replay Buffer to disc....")
     pickle_file("dataset", "buffer.pkl", buffer)
     print("Replay Buffer saved.")
