@@ -12,7 +12,6 @@ class Tournament():
         self.wins = [0] * (len(players))
         self.loss = [0] * (len(players))
         self.board_size = cfg["board_size"]
-
     def run(self, games):
         for i in range (len(self.players)):
             p1 = i
@@ -65,7 +64,7 @@ class Tournament():
 
         fig, ax = plt.subplots()
         rects1 = ax.bar(x - width/2, self.wins, width, label='Wins')
-        rects2 = ax.bar(x + width/2, self.loss, width, label='Losses')
+        rects2 = ax.bar(x - width/2, self.loss, width, label='Losses', bottom=self.wins)
 
         # Add some text for labels, title and custom x-axis tick labels, etc.
         ax.set_ylabel('Games')
@@ -73,8 +72,8 @@ class Tournament():
         ax.set_xticks(x)
         ax.set_xticklabels(labels)
         ax.legend()
-        autolabel(rects1, ax)
-        autolabel(rects2, ax)
+        #autolabel(rects1, ax)
+        #autolabel(rects2, ax)
 
         fig.tight_layout()
 
