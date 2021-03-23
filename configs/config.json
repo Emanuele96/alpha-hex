@@ -2,7 +2,7 @@
     "verbose" : false,
     "board_visualize": false, 
     "board_size" : 5,
-    "episodes": 1,
+    "episodes": 20,
     "anet_lr": 0.0005,
     "anet_layers": [
         {

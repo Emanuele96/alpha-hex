@@ -25,10 +25,15 @@ def pickle_file(path, filename, obj):
     pickle.dump(obj, f, -1)
     f.close()
 
-def unpickle_file(filename):
-    f = open(filename, 'rb')
-    obj = pickle.load(f)
-    f.close()
+def unpickle_file(path, filename):
+    path = Path(path)
+    filepath = path / filename
+    if filepath.is_file():
+        f = open(filepath, 'rb')
+        obj = pickle.load(f)
+        f.close()
+        return obj
+    return None
 
 if __name__ == "__main__":
 
@@ -38,8 +43,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
     cfg = read_config_from_json(args.config)
     print(cfg)
-    buffer = replay_buffer.Replay_buffer()
 
+    buffer = unpickle_file("dataset", "buffer.pkl" )
+    if buffer is None:
+        buffer = replay_buffer.Replay_buffer()
     board = simworld.Board(cfg["board_size"], cfg["board_visualize"], cfg["verbose"])
     actor = actor.Actor(cfg)
     mcts = mcts.MTCS(board.get_state(), actor, buffer, cfg)
@@ -65,4 +72,9 @@ if __name__ == "__main__":
         print("Episode ", i, " Finished. Reward: ", board.get_reward())
         board.reset(False)
         mcts.reset()
-    pickle_file("dataset/", "buffer.pkl", buffer)
+        x_train, y_train = buffer.get_training_dataset()
+        #actor.train(x_train, y_train)
+    print("Saving Replay Buffer to disc....")
+    pickle_file("dataset", "buffer.pkl", buffer)
+    print("Replay Buffer saved.")
+    

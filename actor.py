@@ -17,7 +17,7 @@ class Actor:
             self.input_size = cfg["board_size"] ** 2 + 1
             self.model = ann_model.Net(self.input_size,self.nn_layers, self.use_cuda)
             self.optimizer =  self.initiate_optim(cfg["anet_optim"])
-            self.loss = nn.MSELoss(reduction="mean")
+            self.loss_fn = nn.MSELoss(reduction="mean")
             
 
     def initiate_optim(self, optim_name):
@@ -61,11 +61,17 @@ class Actor:
         else:
             action_distribution[0] = action_distribution[0] / sum(action_distribution[0])
         return action_distribution
-        
 
-        return action_distribution
-    def update(self, state_t, action_t, TD_error):
-        return -1
+    def train(self, x_train, y_train):
+        for i in range(len(x_train)):
+            x_sample = torch.from_numpy(x_train[i])
+            y_label = torch.from_numpy(y_train[i])
+            y_prediction = self.model(x_sample)
+            loss = self.loss_fn(y_prediction, y_label)
+
+            self.optimizer.zero_grad()
+            loss.backward()
+            self.optimizer.step()
         
     def reset(self):
         return -1
