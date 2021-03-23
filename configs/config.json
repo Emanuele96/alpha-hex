@@ -19,5 +19,7 @@
     "number_of_simulations": 200,
     "number_cached_anet": 5,
     "number_tournament_games": 100,
+    "actors_to_save": 5 ,
+    "tournament_players":["0", "8", "20", "32"],
     "use_cuda": false
 }

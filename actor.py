@@ -18,7 +18,7 @@ class Actor:
             self.model = ann_model.Net(self.input_size,self.nn_layers, self.use_cuda)
             self.optimizer =  self.initiate_optim(cfg["anet_optim"])
             self.loss_fn = nn.MSELoss(reduction="mean")
-            
+            self.trained_episodes = 0
 
     def initiate_optim(self, optim_name):
         if optim_name == "sdg":
@@ -82,6 +82,7 @@ class Actor:
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
+        self.trained_episodes += 1
     def reset(self):
         return -1
         #self.e_decay()

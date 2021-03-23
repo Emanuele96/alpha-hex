@@ -89,6 +89,7 @@ class MTCS():
                     #What to do if reached a goal state before rollout?
                     if self.verbose:
                         print("##### Reached goal node before rollout")
+                    print("##### Reached goal node before rollout!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                     #break
                 hashed_action = next(iter(pointer.childrens))
                 action = np.expand_dims(np.asarray(hashed_action), axis=0)
