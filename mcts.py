@@ -137,10 +137,14 @@ class MTCS():
         #From the leaf node, let the actor take some actions until reached goal node
         rollout_board = copy.deepcopy(self.board)
         i = 1
+        print("***")
         while not rollout_board.is_goal_state():
             if i > 1:
                 rollout_board.change_player()
-            if False:
+            print("act p ",rollout_board.active_player)
+            try:
+                action = self.get_suggested_action(board=rollout_board)
+            except:
                 print("**********************************************")
                 print("state ", rollout_board.get_state())
                 a = np.zeros((1, 5, 5))
@@ -148,7 +152,10 @@ class MTCS():
                     a[0][n] = rollout_board.pawns[n].populated_by
                 print("before a\n", a)
                 print("active player", rollout_board.active_player)
-            action = self.get_suggested_action(board=rollout_board)
+                print("is goal for p",rollout_board.active_player, " : ", rollout_board.is_goal_state(verbose= True))
+                rollout_board.change_player()
+                print("is goal for p",rollout_board.get_next_player(), " : ", rollout_board.is_goal_state(verbose=True))
+
             if self.verbose:
                 print("#### Roll nr ", i)
                 print("##### Actual State: ", rollout_board.get_state())

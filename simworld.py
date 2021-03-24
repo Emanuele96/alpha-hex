@@ -249,7 +249,7 @@ class Board:
                 print(action)'''
         return all_actions
 
-    def is_goal_state(self):
+    def is_goal_state(self, verbose=False):
         #Start a DFS from each node on the active player side and check if there is a path to the other side
         visited_nodes = list()
         win_path = list()
@@ -265,7 +265,7 @@ class Board:
                 print("valuating node ",node.coordinates )
                 print("node populated by p", self.active_player, " ", node.populated_by == self.active_player)
             if (node.populated_by == self.active_player) and (node not in visited_nodes):
-                is_win = self.DFS_path_check(node, visited_nodes, win_path)
+                is_win = self.DFS_path_check(node, visited_nodes, win_path, verbose=verbose)
             if is_win:
                 break
         if self.verbose:
@@ -277,7 +277,10 @@ class Board:
                     print(node.coordinates, "\n")
         return is_win
 
-    def DFS_path_check(self, node, visited_nodes,win_path):
+    def DFS_path_check(self, node, visited_nodes,win_path, verbose = False):
+        if verbose:
+            print("Visited node", node.coordinates)
+
         if self.verbose:
             print("DFS visited node ", node.coordinates)
         #Perform recursive DFS with a list of visited nodes and domain specific terminal path settings.
@@ -290,6 +293,8 @@ class Board:
             return True    
         is_terminal_path = False
         for adj_node in node.neighbours:
+            if verbose:
+                print("Adj Node ", adj_node.coordinates, " is populated by ", self.active_player, "  ", adj_node.populated_by == self.active_player, "   and is visited before  ", adj_node in visited_nodes)
             if (adj_node.populated_by == self.active_player) and (adj_node not in visited_nodes):
                 is_terminal_path = self.DFS_path_check(adj_node, visited_nodes,win_path)
             if is_terminal_path:
