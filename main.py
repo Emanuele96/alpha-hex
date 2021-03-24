@@ -52,7 +52,7 @@ if __name__ == "__main__":
     if buffer is None:
         buffer = replay_buffer.Replay_buffer()
     board = simworld.Board(cfg["board_size"], cfg["board_visualize"], cfg["verbose"])
-    actor = unpickle_file("data/actor", "actor_16_ep.pkl")#actor.Actor(cfg)
+    actor = actor.Actor(cfg)
     mcts = mc.MTCS(board.get_state(), actor, buffer, cfg)
 
     p1 = 0
@@ -93,7 +93,7 @@ if __name__ == "__main__":
             #mcts.reset()
             board = simworld.Board(cfg["board_size"], cfg["board_visualize"], cfg["verbose"])
             mcts = mc.MTCS(board.get_state(), actor, buffer, cfg)
-            x_train, y_train = buffer.get_training_dataset()
+            x_train, y_train = buffer.get_training_episode()
             actor.train(x_train, y_train)
         print("All episodes run. The stats are:")
         print("P1 won : ", p1, " P2 won : ", p2)

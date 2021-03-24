@@ -140,13 +140,29 @@ class MTCS():
         while not rollout_board.is_goal_state():
             if i > 1:
                 rollout_board.change_player()
-            action = self.get_suggested_action(rollout_board)
+            if False:
+                print("**********************************************")
+                print("state ", rollout_board.get_state())
+                a = np.zeros((1, 5, 5))
+                for n in rollout_board.pawns.keys():
+                    a[0][n] = rollout_board.pawns[n].populated_by
+                print("before a\n", a)
+                print("active player", rollout_board.active_player)
+            action = self.get_suggested_action(board=rollout_board)
             if self.verbose:
                 print("#### Roll nr ", i)
                 print("##### Actual State: ", rollout_board.get_state())
                 print("##### Active Player: ", rollout_board.active_player)
                 print("##### Choosen Action: ", action)
             rollout_board.update(action)
+            a = np.zeros((1, 5, 5))
+            for n in rollout_board.pawns.keys():
+                a[0][n] = rollout_board.pawns[n].populated_by
+            if False:
+                print("after a\n", a)
+                print("state", rollout_board.get_state())
+                print("is goal for p",rollout_board.active_player, " : ", rollout_board.is_goal_state())
+                print("**********************************************")
             i += 1
         reward =  rollout_board.get_reward()
         del rollout_board
