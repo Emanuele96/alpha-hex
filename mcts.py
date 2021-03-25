@@ -47,8 +47,8 @@ class MTCS():
         self.root = self.import_state(init_state)
         self.epsilon = cfg["epsilon"]
         self.number_of_simulations = cfg["number_of_simulations"]
-        self.visualize = cfg["board_visualize"]
-        self.board = simworld.Board(cfg["board_size"], self.visualize, cfg["verbose"])
+        self.visualize = cfg["rollout_visualize"]
+        self.board = simworld.Board(cfg["board_size"],"Rollout", self.visualize, cfg["verbose"])
         self.initialize_board()
         self.replay_buffer = replay_buffer
         self.verbose = cfg["verbose"]
@@ -144,8 +144,6 @@ class MTCS():
         #From the leaf node, let the actor take some actions until reached goal node
         rollout_board = copy.deepcopy(self.board)
         i = 1
-        #print("***")
-        #print("State", rollout_board.get_state())
 
 
         if  self.visualize:
@@ -161,43 +159,44 @@ class MTCS():
                 pygame.time.delay(self.frame_latency)
                 last_pil_frame = None
 
+        end_visualization = False
 
-
-
-        while not rollout_board.is_goal_state() or self.visualize:
-            if i > 1:
-                rollout_board.change_player()
-            #print("act p ",rollout_board.active_player)
-            '''try:
+        is_rollout_goal_state = rollout_board.is_goal_state()
+        while (not is_rollout_goal_state or self.visualize) and not end_visualization:
+            if not is_rollout_goal_state:
+                if i > 1:
+                    rollout_board.change_player()
+                #print("act p ",rollout_board.active_player)
+                '''try:
+                    action = self.get_suggested_action(board=rollout_board)
+                except:
+                    print("**********************************************")
+                    print("state ", rollout_board.get_state())
+                    a = np.zeros((1, 5, 5))
+                    for n in rollout_board.pawns.keys():
+                        a[0][n] = rollout_board.pawns[n].populated_by
+                    print("before a\n", a)
+                    print("active player", rollout_board.active_player)
+                    print("is goal for p",rollout_board.active_player, " : ", rollout_board.is_goal_state(verbose= True))
+                    rollout_board.change_player()
+                    print("is goal for p",rollout_board.get_next_player(), " : ", rollout_board.is_goal_state(verbose=True))'''
                 action = self.get_suggested_action(board=rollout_board)
-            except:
-                print("**********************************************")
-                print("state ", rollout_board.get_state())
+
+                if self.verbose:
+                    print("#### Roll nr ", i)
+                    print("##### Actual State: ", rollout_board.get_state())
+                    print("##### Active Player: ", rollout_board.active_player)
+                    print("##### Choosen Action: ", action)
+                new_pil_frame = rollout_board.update(action)
                 a = np.zeros((1, 5, 5))
                 for n in rollout_board.pawns.keys():
                     a[0][n] = rollout_board.pawns[n].populated_by
-                print("before a\n", a)
-                print("active player", rollout_board.active_player)
-                print("is goal for p",rollout_board.active_player, " : ", rollout_board.is_goal_state(verbose= True))
-                rollout_board.change_player()
-                print("is goal for p",rollout_board.get_next_player(), " : ", rollout_board.is_goal_state(verbose=True))'''
-            action = self.get_suggested_action(board=rollout_board)
-
-            if self.verbose:
-                print("#### Roll nr ", i)
-                print("##### Actual State: ", rollout_board.get_state())
-                print("##### Active Player: ", rollout_board.active_player)
-                print("##### Choosen Action: ", action)
-            new_pil_frame = rollout_board.update(action)
-            a = np.zeros((1, 5, 5))
-            for n in rollout_board.pawns.keys():
-                a[0][n] = rollout_board.pawns[n].populated_by
-            if False:
-                print("after a\n", a)
-                print("state", rollout_board.get_state())
-                print("is goal for p",rollout_board.active_player, " : ", rollout_board.is_goal_state())
-                print("**********************************************")
-            i += 1
+                if False:
+                    print("after a\n", a)
+                    print("state", rollout_board.get_state())
+                    print("is goal for p",rollout_board.active_player, " : ", rollout_board.is_goal_state())
+                    print("**********************************************")
+                i += 1
 
             if self.visualize:
                     #Performe the routine for visualization
@@ -211,6 +210,10 @@ class MTCS():
                     for event in pygame.event.get() :
                         if event.type == pygame.QUIT :
                             pygame.quit()
+                            end_visualization = True
+
+        
+            is_rollout_goal_state = rollout_board.is_goal_state()
         reward =  rollout_board.get_reward()
         del rollout_board
         return reward

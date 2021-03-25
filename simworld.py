@@ -16,7 +16,7 @@ class Node:
         self.populated_by = 0
 
 class Board:
-    def __init__(self, size, visualize, verbose):
+    def __init__(self, size, board_name, visualize, verbose):
         self.verbose = verbose
         self.initial_state = np.zeros((1, size**2 + 1))
         self.initial_state[0,0] = 1
@@ -26,8 +26,7 @@ class Board:
         self.state_t = self.initial_state
         self.move_counter = 0
         self.populate_board()
-        #self.possible_actions = None
-        #self.compute_all_possible_actions()
+        self.board_name = board_name
         self.graph = None
         self.visualize = visualize
         if self.visualize:
@@ -57,10 +56,6 @@ class Board:
         if self.visualize:
             self.graph = self.generate_graph()
 
-    ''' def remove_all_pawns(self):
-        for node in self.pawns.values():
-            node.empty_the_node()'''
-    
     def get_state(self):
         return self.state_t
 
@@ -73,11 +68,7 @@ class Board:
                 coordinates_2d_y = coordinates_1d // self.size
                 coordinates_2d_x = coordinates_1d % self.size
                 self.pawns[coordinates_2d_y, coordinates_2d_x].populated_by = state[0, coordinates_1d + 1]
-                #print("state v", state[0, coordinates_1d + 1])
-                #print("board position: ", [coordinates_2d_y, coordinates_2d_x])
-        #self.compute_all_possible_actions()
 
-    
     def set_active_player(self, player_id):
         self.active_player = player_id
         self.state_t[0,0] = player_id
@@ -97,11 +88,6 @@ class Board:
         #return the state t1 from state t taken action t. NB: This will not update the state of the board
         if state_t is None:
             state_t = self.state_t
-        #possible_actions = self.get_all_possible_actions()
-        '''print(possible_actions == action)
-        if action not in possible_actions:
-            return None
-            #TODO implement raise exception'''
         next_state = np.zeros(self.state_t.shape) + self.state_t
         next_state[:, 1:] += action
         if change_player:
@@ -124,21 +110,6 @@ class Board:
     def to_numpy_array(self):
         #Convert the board to a numpy array, so that can be visualized.
         #Generate a list of all nodes, this will be rows and columns for the adjacent matrix
-        '''all_nodes = list(())
-        for node in self.pawns.keys():
-            all_nodes.append(node)
-        if self.verbose:
-            print(all_nodes)
-        adj_matrix = np.zeros((len(all_nodes), len(all_nodes)), dtype=int)
-        #Then iterate through every node (row) and for each neighbour, find the corrispondent index(column) and fill that box with 1.
-        for i in range(len(all_nodes)):
-            node = self.pawns[all_nodes[i]]
-            all_neigbours_keyes = list(())
-            for neighbour_key in node.neighbours.keys():
-                all_neigbours_keyes.append(neighbour_key)
-            for key in all_neigbours_keyes:
-                j = all_nodes.index(node.neighbours[key].coordinates)
-                adj_matrix[i][j] = 1'''
         adj_matrix = np.zeros((self.size**2, self.size**2), dtype=int)
         for node in self.pawns.values():
             row = node.coordinates[1] + node.coordinates[0] * self.size
@@ -204,7 +175,8 @@ class Board:
         #Print the move 
         font = ImageFont.truetype('arial.ttf', 30)
         draw = ImageDraw.Draw(img)
-        draw.text((0, 0),"Move nr. " + str(self.move_counter), (0,0,0), font=font)
+        draw.text((0, 0), self.board_name, (0,0,0), font=font)
+        draw.text((0, 60),"Move nr. " + str(self.move_counter), (0,0,0), font=font)
         return img
 
     def matplotlib_to_pil(self, fig):
@@ -212,40 +184,17 @@ class Board:
         bufffer = io.BytesIO()
         fig.savefig(bufffer)
         bufffer.seek(0)
-        return Image.open(bufffer)
-    
-    '''def compute_all_possible_actions(self):
-        #Analize the board and check all possible actions. 
-        #print("active player", self.active_player)
-        all_actions = list(())
-        tot_possible_actions = self.size**2
-        for i in range(tot_possible_actions):
-            if self.state_t[0, i+1] == 0:
-                action = np.zeros((1, tot_possible_actions))
-                action[0, i] = self.active_player
-                all_actions.append(action)                       
-        if self.verbose:
-            print("all legal actions: " + str(len(all_actions)))
-            for action in all_actions:
-                print(action)
-        self.possible_actions =  all_actions'''
+        return Image.open(bufffer) 
                     
     def get_all_possible_actions(self):
         #Analize the board and check all possible actions. 
-        #print("active player", self.active_player)
-        #print("all possible actions")
         all_actions = list(())
         tot_possible_actions = self.size**2
         for i in range(tot_possible_actions):
-            #print(self.state_t[0, i+1])
             if self.state_t[0, i+1] == 0:
                 action = np.zeros((1, tot_possible_actions))
                 action[0, i] = self.active_player
                 all_actions.append(action)                         
-        '''if self.verbose:
-            print("all legal actions: " + str(len(all_actions)))
-            for action in all_actions:
-                print(action)'''
         return all_actions
 
     def is_goal_state(self, verbose=False):

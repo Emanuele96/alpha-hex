@@ -57,7 +57,7 @@ if __name__ == "__main__":
     buffer = unpickle_file("data/dataset", "buffer.pkl" )
     if buffer is None:
         buffer = replay_buffer.Replay_buffer()
-    board = simworld.Board(cfg["board_size"], cfg["board_visualize"], cfg["verbose"])
+    board = simworld.Board(cfg["board_size"], "Main Game", cfg["board_visualize"], cfg["verbose"])
     actor = actor.Actor(cfg)
     mcts = mc.MTCS(board.get_state(), actor, buffer, cfg)
 
@@ -125,7 +125,7 @@ if __name__ == "__main__":
 
             #board.reset(False)
             #mcts.reset()
-            board = simworld.Board(cfg["board_size"], cfg["board_visualize"], cfg["verbose"])
+            board = simworld.Board(cfg["board_size"], "Main Game", cfg["board_visualize"], cfg["verbose"])
             mcts = mc.MTCS(board.get_state(), actor, buffer, cfg)
             x_train, y_train = buffer.get_training_episode()
             actor.train(x_train, y_train)

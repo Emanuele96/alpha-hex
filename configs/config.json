@@ -1,6 +1,7 @@
 {
     "verbose" : false,
-    "board_visualize": true, 
+    "board_visualize": false, 
+    "rollout_visualize": true,
     "frame_latency": 100,
     "board_size" : 5,
     "episodes": 20,
