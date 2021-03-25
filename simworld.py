@@ -24,7 +24,7 @@ class Board:
         self.active_player = 1
         self.pawns = {}
         self.state_t = self.initial_state
-        self.move_counter = 0
+        self.move_counter = 1
         self.populate_board()
         self.board_name = board_name
         self.graph = None
@@ -83,6 +83,7 @@ class Board:
     def change_player(self):
         #Use this to change player outside this class
         self.set_active_player(self.get_next_player()) 
+        self.move_counter += 1
 
     def get_next_state(self, action,  state_t = None, change_player = False):
         #return the state t1 from state t taken action t. NB: This will not update the state of the board
@@ -198,6 +199,13 @@ class Board:
         return all_actions
 
     def is_goal_state(self, verbose=False):
+        '''if self.board_name== "Main Game":
+            print("**************Start goal check *************")
+            a = np.zeros((1, 5, 5))
+            for n in self.pawns.keys():
+                a[0][n] = self.pawns[n].populated_by
+            print("check actual board\n", a)
+            print("state is ", self.state_t)'''
         #Start a DFS from each node on the active player side and check if there is a path to the other side
         visited_nodes = list()
         win_path = list()
@@ -226,22 +234,26 @@ class Board:
         return is_win
 
     def DFS_path_check(self, node, visited_nodes,win_path, verbose = False):
-        if verbose:
-            print("Visited node", node.coordinates)
+        '''if self.board_name== "Main Game":
+            print("Visited node", node.coordinates)'''
 
         if self.verbose:
             print("DFS visited node ", node.coordinates)
         #Perform recursive DFS with a list of visited nodes and domain specific terminal path settings.
         visited_nodes.append(node)
         if node.coordinates[0] == self.size - 1 and self.active_player == 1:
+            if self.board_name== "Main Game":
+                print("GOAL!")
             win_path.append(node)
             return True
         elif node.coordinates[1] == self.size - 1 and self.active_player == 2:
+            if self.board_name== "Main Game":
+                print("GOAL!")
             win_path.append(node)
             return True    
         is_terminal_path = False
         for adj_node in node.neighbours:
-            if verbose:
+            if verbose or self.board_name== "Main Game":
                 print("Adj Node ", adj_node.coordinates, " is populated by ", self.active_player, "  ", adj_node.populated_by == self.active_player, "   and is visited before  ", adj_node in visited_nodes)
             if (adj_node.populated_by == self.active_player) and (adj_node not in visited_nodes):
                 is_terminal_path = self.DFS_path_check(adj_node, visited_nodes,win_path)

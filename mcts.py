@@ -52,7 +52,7 @@ class MTCS():
         self.initialize_board()
         self.replay_buffer = replay_buffer
         self.verbose = cfg["verbose"]
-        self.frame_latency = cfg["frame_latency"]
+        self.frame_latency = cfg["frame_latency_rollout"]
 
     
     def initialize_board(self):
@@ -212,7 +212,6 @@ class MTCS():
                             pygame.quit()
                             end_visualization = True
 
-        
             is_rollout_goal_state = rollout_board.is_goal_state()
         reward =  rollout_board.get_reward()
         del rollout_board

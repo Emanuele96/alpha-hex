@@ -1,8 +1,9 @@
 {
     "verbose" : false,
-    "board_visualize": false, 
-    "rollout_visualize": true,
-    "frame_latency": 100,
+    "board_visualize": true, 
+    "rollout_visualize": false,
+    "frame_latency": 500,
+    "frame_latency_rollout":100,
     "board_size" : 5,
     "episodes": 20,
     "anet_lr": 0.0005,

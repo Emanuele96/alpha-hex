@@ -85,23 +85,26 @@ if __name__ == "__main__":
                 pygame.display.update() 
                 pygame.time.delay(cfg["frame_latency"])
                 last_pil_frame = None
-            
-            while not board.is_goal_state() or cfg["board_visualize"] :
-                if move > 1:
-                    board.change_player()
-                    mcts.prune_tree(choosen_action)
-                    print("*****************************************************")
-                    print("Move nr. ", move, " - Player ", int(board.active_player))
-                    print("Before\n", board.get_state()[0,1:].reshape(1, cfg["board_size"], cfg["board_size"]))
-                action_distribution = mcts.run_simulation()
-                #hashed_action = max(action_distribution, key= action_distribution.get)
-                #choosen_action = np.expand_dims(np.asarray(hashed_action), axis=0)
-                choosen_action = actor.get_max_action_from_distribution(action_distribution, board.active_player)
-                
-                new_pil_frame = board.update(choosen_action)
-                move += 1
-                print("After\n", board.get_state()[0,1:].reshape(1, cfg["board_size"], cfg["board_size"]))
-            
+            is_main_game_goal = board.is_goal_state()
+            end_visualization = False
+            while (not is_main_game_goal or cfg["board_visualize"]) and not end_visualization :
+                if not is_main_game_goal:
+                    if move > 1:
+                        board.change_player()
+                        mcts.prune_tree(choosen_action)
+                        print("*****************************************************")
+                        print("Move nr. ", move, " - Player ", int(board.active_player))
+                        print("Before\n", board.get_state()[0,1:].reshape(1, cfg["board_size"], cfg["board_size"]))
+                    action_distribution = mcts.run_simulation()
+                    #hashed_action = max(action_distribution, key= action_distribution.get)
+                    #choosen_action = np.expand_dims(np.asarray(hashed_action), axis=0)
+                    choosen_action = actor.get_max_action_from_distribution(action_distribution, board.active_player)
+                    
+                    new_pil_frame = board.update(choosen_action)
+                    move += 1
+                    print("After\n", board.get_state()[0,1:].reshape(1, cfg["board_size"], cfg["board_size"]))
+                    is_main_game_goal = board.is_goal_state()
+
                 if cfg["board_visualize"]:
                     #Performe the routine for visualization
                     if new_pil_frame != last_pil_frame:
@@ -114,7 +117,9 @@ if __name__ == "__main__":
                     for event in pygame.event.get() :
                         if event.type == pygame.QUIT :
                             pygame.quit()
-            
+                            end_visualization = True
+                
+                
             reward = board.get_reward()
             print("*****************************************************")
             print("Episode ", i, " Finished. Reward: ", reward )
@@ -129,6 +134,7 @@ if __name__ == "__main__":
             mcts = mc.MTCS(board.get_state(), actor, buffer, cfg)
             x_train, y_train = buffer.get_training_episode()
             actor.train(x_train, y_train)
+            
         print("All episodes run. The stats are:")
         print("P1 won : ", p1, " P2 won : ", p2)
         print("Saving Replay Buffer to disc....")
