@@ -242,18 +242,14 @@ class Board:
         #Perform recursive DFS with a list of visited nodes and domain specific terminal path settings.
         visited_nodes.append(node)
         if node.coordinates[0] == self.size - 1 and self.active_player == 1:
-            if self.board_name== "Main Game":
-                print("GOAL!")
             win_path.append(node)
             return True
         elif node.coordinates[1] == self.size - 1 and self.active_player == 2:
-            if self.board_name== "Main Game":
-                print("GOAL!")
             win_path.append(node)
             return True    
         is_terminal_path = False
         for adj_node in node.neighbours:
-            if verbose or self.board_name== "Main Game":
+            if verbose:
                 print("Adj Node ", adj_node.coordinates, " is populated by ", self.active_player, "  ", adj_node.populated_by == self.active_player, "   and is visited before  ", adj_node in visited_nodes)
             if (adj_node.populated_by == self.active_player) and (adj_node not in visited_nodes):
                 is_terminal_path = self.DFS_path_check(adj_node, visited_nodes,win_path)

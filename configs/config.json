@@ -1,6 +1,6 @@
 {
     "verbose" : false,
-    "board_visualize": true, 
+    "board_visualize": false, 
     "rollout_visualize": false,
     "frame_latency": 500,
     "frame_latency_rollout":100,
