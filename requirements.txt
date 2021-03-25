@@ -2,3 +2,4 @@ networkx
 -U pygame --user
 progress
 pickle
+pygame

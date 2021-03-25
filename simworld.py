@@ -124,12 +124,12 @@ class Board:
     def to_numpy_array(self):
         #Convert the board to a numpy array, so that can be visualized.
         #Generate a list of all nodes, this will be rows and columns for the adjacent matrix
-        all_nodes = list(())
+        '''all_nodes = list(())
         for node in self.pawns.keys():
             all_nodes.append(node)
-        if variables.debug:
+        if self.verbose:
             print(all_nodes)
-        adj_matrix = np.full((len(all_nodes), len(all_nodes)), 0, dtype=int)
+        adj_matrix = np.zeros((len(all_nodes), len(all_nodes)), dtype=int)
         #Then iterate through every node (row) and for each neighbour, find the corrispondent index(column) and fill that box with 1.
         for i in range(len(all_nodes)):
             node = self.pawns[all_nodes[i]]
@@ -138,7 +138,14 @@ class Board:
                 all_neigbours_keyes.append(neighbour_key)
             for key in all_neigbours_keyes:
                 j = all_nodes.index(node.neighbours[key].coordinates)
-                adj_matrix[i][j] = 1
+                adj_matrix[i][j] = 1'''
+        adj_matrix = np.zeros((self.size**2, self.size**2), dtype=int)
+        for node in self.pawns.values():
+            row = node.coordinates[1] + node.coordinates[0] * self.size
+            for adj_node in node.neighbours:
+                column = adj_node.coordinates[1] + adj_node.coordinates[0] * self.size
+                adj_matrix[row][column] = 1
+        
         return adj_matrix
 
     def generate_graph(self):
@@ -149,8 +156,8 @@ class Board:
         for node in self.pawns.keys():
             all_nodes.append(node)
         for i in range(adj_matrix.shape[0]):
-            G.add_node(i, coordinates = self.pawns[all_nodes[i]].coordinates, is_selected = False, is_being_eaten = False, is_empty = self.pawns[all_nodes[i]].is_empty, diamond_plan = all_nodes[i][0] + all_nodes[i][1], triangle_plan =  all_nodes[i][0] )
-        if variables.debug:
+            G.add_node(i, coordinates = self.pawns[all_nodes[i]].coordinates,  populated_by = self.pawns[all_nodes[i]].populated_by, diamond_plan = all_nodes[i][0] + all_nodes[i][1])
+        if self.verbose:
             print(adj_matrix)
             print(G.nodes.data())
         return G
@@ -159,35 +166,28 @@ class Board:
         #Iterate foreach node in the graph and syncronize attributes with the new values
         nodes = list(self.graph.nodes(data=True))
         for node in nodes:
-            if variables.debug:
+            if self.verbose:
                 print(node)
             coordinates = node[1]["coordinates"]
-            node[1]["is_empty"] = self.pawns[coordinates].is_empty
-            node[1]["is_selected"] = self.pawns[coordinates].is_selected
-            node[1]["is_being_eaten"] = self.pawns[coordinates].is_being_eaten
+            node[1]["populated_by"] = self.pawns[coordinates].populated_by
 
     def show_board(self):
         #Plot the graph nodes and edges  with regards of plans (1 different plan per row), then do the necessary flipping and rotation for matching the board to the assigment
-        if self.form == "diamond":
-            rotation = 180
-            plan_key = "diamond_plan"
-        elif self.form == "triangle":
-            rotation = 180
-            plan_key = "triangle_plan"
-        position = nx.multipartite_layout(self.graph, subset_key=plan_key, align="horizontal", center=[0,5])
+        rotation = 180
+        position = nx.multipartite_layout(self.graph, subset_key= "diamond_plan", align="horizontal", center=[0,5])
         #Decide the color of each node, based on if it is empty or not
         nodes_color = []
         nodes = list(self.graph.nodes(data=True))
         for node in nodes:
             color = ""
-            if node[1]["is_empty"]:                
+            if node[1]["populated_by"] == 0:                
                 color = "#ffffff"
-            elif node[1]["is_selected"]:                
-                color = "#17e310"
-            elif node[1]["is_being_eaten"]:                
-                color = "#fa0000"
-            else:
+            elif node[1]["populated_by"] == 1:                
+                color = "#ff0000"
+            elif node[1]["populated_by"] == 2:                
                 color = "#000000"
+            else:
+                color = "#ffff00"
             nodes_color.append(color)
         options = {'node_size': 400,'width': 1, 'pos' : position, 'with_labels':False, 'font_weight':'bold', 'node_color': nodes_color, 'linewidths':5}
         nx.draw(self.graph, **options )
@@ -199,8 +199,7 @@ class Board:
         fig = plt.gcf()
         img = self.matplotlib_to_pil(fig)
         img = img.rotate(rotation)
-        if self.form == "diamond":
-            img = img.transpose(Image.FLIP_LEFT_RIGHT)
+        img = img.transpose(Image.FLIP_LEFT_RIGHT)
         plt.clf()
         #Print the move 
         font = ImageFont.truetype('arial.ttf', 30)
@@ -321,10 +320,11 @@ class Board:
 
     def update(self, action):
         #Apply the action to the board and change interested nodes propriety such that it can be visualized 
-        #return a img frame of the new board stat  
-        self.populate_pawn(action, self.active_player)
-        self.set_state(self.get_next_state(action), True)    
-        #self.set_active_player(self.get_next_player())        
+        #return a img frame of the new board state
+        if action is not None:
+            self.populate_pawn(action, self.active_player)
+            self.set_state(self.get_next_state(action), True)    
+            #self.set_active_player(self.get_next_player())        
         if self.visualize:
             self.update_graph()
             frame = self.show_board()

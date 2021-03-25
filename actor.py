@@ -17,7 +17,7 @@ class Actor:
             self.input_size = cfg["board_size"] ** 2 + 1
             self.model = ann_model.Net(self.input_size,self.nn_layers, self.use_cuda)
             self.optimizer =  self.initiate_optim(cfg["anet_optim"])
-            self.loss_fn = nn.MSELoss(reduction="mean")
+            self.loss_fn =nn.BCELoss() # nn.CrossEntropyLoss()#nn.MSELoss(reduction="mean")
             self.trained_episodes = 0
 
     def initiate_optim(self, optim_name):

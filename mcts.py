@@ -2,6 +2,9 @@ import math
 import simworld
 import copy
 import numpy as np
+from game_visualize import pil_image_to_pygame
+import pygame
+
 class MTCS_node():
     
     def __init__(self, state, action, parent):
@@ -44,10 +47,13 @@ class MTCS():
         self.root = self.import_state(init_state)
         self.epsilon = cfg["epsilon"]
         self.number_of_simulations = cfg["number_of_simulations"]
-        self.board = simworld.Board(cfg["board_size"], False, cfg["verbose"])
+        self.visualize = cfg["board_visualize"]
+        self.board = simworld.Board(cfg["board_size"], self.visualize, cfg["verbose"])
         self.initialize_board()
         self.replay_buffer = replay_buffer
         self.verbose = cfg["verbose"]
+        self.frame_latency = cfg["frame_latency"]
+
     
     def initialize_board(self):
         self.board.set_state(self.init_state, True)
@@ -134,15 +140,35 @@ class MTCS():
         return self.board.is_goal_state()
 
     def rollout(self, node):
+
         #From the leaf node, let the actor take some actions until reached goal node
         rollout_board = copy.deepcopy(self.board)
         i = 1
-        print("***")
-        while not rollout_board.is_goal_state():
+        #print("***")
+        #print("State", rollout_board.get_state())
+
+
+        if  self.visualize:
+                pygame.init()
+                #Show start board, generate an img, get the size and initializate a pygame display
+                img = rollout_board.update(None)
+                X, Y = img.size
+                display_surface = pygame.display.set_mode((X,Y)) 
+                frame = pil_image_to_pygame(img)
+                pygame.display.set_caption('Alpha Hex - Emanuele Caprioli')
+                display_surface.blit(frame, (0, 0)) 
+                pygame.display.update() 
+                pygame.time.delay(self.frame_latency)
+                last_pil_frame = None
+
+
+
+
+        while not rollout_board.is_goal_state() or self.visualize:
             if i > 1:
                 rollout_board.change_player()
-            print("act p ",rollout_board.active_player)
-            try:
+            #print("act p ",rollout_board.active_player)
+            '''try:
                 action = self.get_suggested_action(board=rollout_board)
             except:
                 print("**********************************************")
@@ -154,14 +180,15 @@ class MTCS():
                 print("active player", rollout_board.active_player)
                 print("is goal for p",rollout_board.active_player, " : ", rollout_board.is_goal_state(verbose= True))
                 rollout_board.change_player()
-                print("is goal for p",rollout_board.get_next_player(), " : ", rollout_board.is_goal_state(verbose=True))
+                print("is goal for p",rollout_board.get_next_player(), " : ", rollout_board.is_goal_state(verbose=True))'''
+            action = self.get_suggested_action(board=rollout_board)
 
             if self.verbose:
                 print("#### Roll nr ", i)
                 print("##### Actual State: ", rollout_board.get_state())
                 print("##### Active Player: ", rollout_board.active_player)
                 print("##### Choosen Action: ", action)
-            rollout_board.update(action)
+            new_pil_frame = rollout_board.update(action)
             a = np.zeros((1, 5, 5))
             for n in rollout_board.pawns.keys():
                 a[0][n] = rollout_board.pawns[n].populated_by
@@ -171,6 +198,19 @@ class MTCS():
                 print("is goal for p",rollout_board.active_player, " : ", rollout_board.is_goal_state())
                 print("**********************************************")
             i += 1
+
+            if self.visualize:
+                    #Performe the routine for visualization
+                    if new_pil_frame != last_pil_frame:
+                        new_frame = pil_image_to_pygame(new_pil_frame)
+                        last_pil_frame = new_pil_frame
+                        # Update the pygame display with the new frames a delay between each frames
+                        display_surface.blit(new_frame, (0, 0)) 
+                        pygame.display.update() 
+                        pygame.time.wait(self.frame_latency)
+                    for event in pygame.event.get() :
+                        if event.type == pygame.QUIT :
+                            pygame.quit()
         reward =  rollout_board.get_reward()
         del rollout_board
         return reward
