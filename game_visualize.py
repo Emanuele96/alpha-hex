@@ -91,10 +91,6 @@ if __name__ == "__main__":
                 if not is_main_game_goal:
                     if move > 1:
                         board.change_player()
-                        print("isgoal ", is_main_game_goal)
-                        print("choosen action", choosen_action)
-                        print("main game board state", board.get_state())
-                        print("mcts state", mcts.root.state)
                         mcts.prune_tree(choosen_action)
                         print("*****************************************************")
                         print("Move nr. ", move, " - Player ", int(board.active_player))

@@ -64,9 +64,7 @@ class MTCS():
 
 
     def run_simulation(self):
-        print("ROOT STATE", self.root.state)
         simulation = 1
-        #pointer = self.root
         #Cache the board. This will be the same for each simulation
         cached_simulation_board = copy.deepcopy(self.board)
         while simulation < self.number_of_simulations:
@@ -80,54 +78,24 @@ class MTCS():
                 if self.verbose:
                     print("Not leaf node, select next node with tree policy")
                 pointer = self.choose_next_node(pointer)
-                #action = np.expand_dims(np.asarray(hashed_action), axis=0)
-                #self.board.update(action)
-                #self.board.change_player()
-                #next_node = pointer.childrens[hashed_action]
-                #next_node.parent = pointer
-                #pointer = next_node
             #If the node has been sampled before or it is the root, expand it, select the first of the childrens and run a rollout and backpropagation
             if pointer.total_visits > 0 or pointer.is_root:
                 if self.verbose:
                     print("### Leaf node sampled before or is root. Expanding Node and selecting a child.")
                 self.expand_leaf(pointer)
-
-
-
-                
-                print("###########################################")
-                print("Node expanded. State ", pointer.state)
-                print("childrens\n")
-                for key in pointer.childrens.keys():
-                    print("action", key)
-                    print("state", pointer.childrens[key].state)
-                print("###########################################")
-
-
-
-
-
                 #Bruk aktoren?
                 if len(pointer.childrens)== 0:
                     #What to do if reached a goal state before rollout?Get reward and backpropagate. 
                     if self.verbose:
                         print("##### Reached goal node before rollout")
-                    
-                    for i in range(1000):
-                        print("##### Reached goal node before rollout!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-                    #break
                 else:
                     hashed_action = next(iter(pointer.childrens))
                     action = np.expand_dims(np.asarray(hashed_action), axis=0)
-                    #self.board.update(action)
-                    #self.board.change_player()
                     pointer = pointer.childrens[hashed_action]
             elif self.verbose:
                 print("### Leaf node never sampled before.")
-
             #Update the board to the leaf node state
             self.board.set_state(pointer.state, True)
-            print("board state before rollout", self.board.get_state())
             if self.verbose:
                 print("### Starting rollout from ", pointer)
             reward = self.rollout()
@@ -169,8 +137,6 @@ class MTCS():
             #From the leaf node, let the actor take some actions until reached goal node
             rollout_board = copy.deepcopy(self.board)
             i = 1
-
-            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Rollout start state", rollout_board.get_state())
             if  self.visualize:
                     pygame.init()
                     #Show start board, generate an img, get the size and initializate a pygame display
@@ -191,36 +157,21 @@ class MTCS():
                 if not is_rollout_goal_state:
                     if i > 1:
                         rollout_board.change_player()
-                    #print("act p ",rollout_board.active_player)
-                    try:
-                        action = self.get_suggested_action(board=rollout_board)
-                    except:
-                        print("************************#################################################################**********************")
-                        print("state ", rollout_board.get_state().astype(int))
-                        a = np.zeros((1, 5, 5))
-                        for n in rollout_board.pawns.keys():
-                            a[0][n] = rollout_board.pawns[n].populated_by
-                        print("before a\n", a)
-                        print("active player", rollout_board.active_player)
-                        print("is goal for p",rollout_board.active_player, " : ", rollout_board.is_goal_state(verbose= True))
-                        rollout_board.change_player()
-                        print("is goal for p",rollout_board.get_next_player(), " : ", rollout_board.is_goal_state(verbose=True))
-                    #action = self.get_suggested_action(board=rollout_board)
-
+                    action = self.get_suggested_action(board=rollout_board)
                     if self.verbose:
                         print("#### Roll nr ", i)
                         print("##### Actual State: ", rollout_board.get_state())
                         print("##### Active Player: ", rollout_board.active_player)
                         print("##### Choosen Action: ", action)
                     new_pil_frame = rollout_board.update(action)
-                    a = np.zeros((1, 5, 5))
-                    for n in rollout_board.pawns.keys():
-                        a[0][n] = rollout_board.pawns[n].populated_by
-                    if False:
-                        print("after a\n", a)
-                        print("state", rollout_board.get_state())
-                        print("is goal for p",rollout_board.active_player, " : ", rollout_board.is_goal_state())
-                        print("**********************************************")
+                    #a = np.zeros((1, 5, 5))
+                    #for n in rollout_board.pawns.keys():
+                    #    a[0][n] = rollout_board.pawns[n].populated_by
+                    #if False:
+                    #    print("after a\n", a)
+                    #    print("state", rollout_board.get_state())
+                    #    print("is goal for p",rollout_board.active_player, " : ", rollout_board.is_goal_state())
+                    #    print("**********************************************")
                     i += 1
 
                 if self.visualize:
@@ -236,7 +187,6 @@ class MTCS():
                             if event.type == pygame.QUIT :
                                 pygame.quit()
                                 end_visualization = True
-
                 is_rollout_goal_state = rollout_board.is_goal_state()
             reward =  rollout_board.get_reward()
             del rollout_board
@@ -272,30 +222,10 @@ class MTCS():
             if self.verbose:
                 print("##### Expanding Node ", node)
             possible_actions = self.board.get_all_possible_actions(node.state)
-
-
-
-
-            print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
-            print("Expanding NODe", node.state)
-            print("ALll possible moves")
-            for m in possible_actions:
-                print(m)
-
-
-
             for action in possible_actions:
-
                 #Action is a np array and as list are unhashable. A key for a dict must be hashable, so convert to bytes (action.tobytes()) or tuple(action))
                 hashable_action = tuple(action[0])
                 tmp_state = self.board.get_next_state(action=action, state_t=node.state, change_player=True)
-
-
-                print("CREATING NEXT NODE")
-                print("PREVIOUS STATE ", node.state)
-                print("ACTION", action)
-                print("NEXT STATE ", tmp_state)
-
                 tmp_node = MTCS_node(tmp_state, hashable_action, node)
                 node.childrens[hashable_action]= tmp_node
                 node.q_values[hashable_action] = 0
@@ -305,7 +235,6 @@ class MTCS():
     
     def choose_next_node(self, node):
         #Calculate usa values and do the best greedy choice relate to the player playing
-        print("acp", self.board.state.shape)
         if self.verbose:
             print("##### Choosing next Node")
         tmp = dict()
@@ -317,7 +246,6 @@ class MTCS():
             for action in node.q_values:
                 tmp[action] = node.q_values[action] - self.calculate_usa(node, action) 
             choosen_action = min(tmp, key= tmp.get)
-        #action = np.expand_dims(np.asarray(choosen_action), axis=0)
         next_node = node.childrens[choosen_action]
         next_node.parent = node
         return next_node
@@ -339,20 +267,7 @@ class MTCS():
         #Prune the tree: remove the root status to the actual root, point to the children of old root via the action and make it the new root
         self.root.is_root = False
         hashed_action = tuple(action[0])
-
-
-        print("pruninggggggggg")
-        print("ROOT", self.root.state)
-        print("action", action)
-        
-        print("Childrens\n")
-        for key in self.root.childrens.keys():
-            print(key)
-        print("is action in roots children ", hashed_action in self.root.childrens.keys())
-
-
         new_root = self.root.childrens[hashed_action]
         new_root.is_root = True
         self.root = new_root
         self.board.set_state(new_root.state, True)
-        #self.board.change_player()

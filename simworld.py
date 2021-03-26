@@ -201,14 +201,6 @@ class Board:
         return all_actions
 
     def is_goal_state(self, verbose=False, active_player = None):
-        if self.board_name== "Rollout":
-            print("**************Start goal check *************")
-            a = np.zeros((1, 5, 5))
-            for n in self.pawns.keys():
-                a[0][n] = self.pawns[n].populated_by
-            print("check actual board\n", a)
-            print("state is ", self.state_t)
-            print("active player", self.active_player)
         #Start a DFS from each node on the active player side and check if there is a path to the other side
         if active_player is None:
             active_player = self.active_player
@@ -240,9 +232,6 @@ class Board:
         return is_win
 
     def DFS_path_check(self, node, visited_nodes, win_path, active_player, verbose = False):
-        if self.board_name== "Rollout":
-            print("Visited node", node.coordinates)
-
         if self.verbose:
             print("DFS visited node ", node.coordinates)
         #Perform recursive DFS with a list of visited nodes and domain specific terminal path settings.
