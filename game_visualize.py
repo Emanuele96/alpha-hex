@@ -96,6 +96,7 @@ if __name__ == "__main__":
                         print("Move nr. ", move, " - Player ", int(board.active_player))
                         print("Before\n", board.get_state()[0,1:].reshape(1, cfg["board_size"], cfg["board_size"]))
                     action_distribution = mcts.run_simulation()
+                    print("ACTion distrisbution", action_distribution)
                     #hashed_action = max(action_distribution, key= action_distribution.get)
                     #choosen_action = np.expand_dims(np.asarray(hashed_action), axis=0)
                     choosen_action = actor.get_max_action_from_distribution(action_distribution, board.active_player)

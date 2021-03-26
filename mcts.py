@@ -4,6 +4,8 @@ import copy
 import numpy as np
 from game_visualize import pil_image_to_pygame
 import pygame
+import random
+import operator
 
 class MTCS_node():
     
@@ -88,10 +90,17 @@ class MTCS():
                     #What to do if reached a goal state before rollout?Get reward and backpropagate. 
                     if self.verbose:
                         print("##### Reached goal node before rollout")
+                    for i in range(1):
+                        print("#############&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&#######################")
+                        print(pointer.state)
                 else:
-                    hashed_action = next(iter(pointer.childrens))
-                    action = np.expand_dims(np.asarray(hashed_action), axis=0)
-                    pointer = pointer.childrens[hashed_action]
+
+                    #hashed_action = next(iter(pointer.childrens))
+                    #action = np.expand_dims(np.asarray(hashed_action), axis=0)
+                    #pointer = pointer.childrens[hashed_action]
+
+                    #Do a random choice of next node
+                    pointer = random.choice(list(pointer.childrens.values()))
             elif self.verbose:
                 print("### Leaf node never sampled before.")
             #Update the board to the leaf node state
@@ -131,9 +140,11 @@ class MTCS():
         return self.board.is_goal_state()
 
     def rollout(self):
+        #print("rollouttttttttttttt")
+        #print(self.board.get_state())
         #Check wether the node to start the rollout is not a goal state for either players. 
         # This rule out some edge cases.
-        if not self.board.is_goal_state(active_player=1) and self.board.is_goal_state(active_player=2):
+        if not self.board.is_goal_state(active_player=1) and not self.board.is_goal_state(active_player=2):
             #From the leaf node, let the actor take some actions until reached goal node
             rollout_board = copy.deepcopy(self.board)
             i = 1
@@ -157,6 +168,8 @@ class MTCS():
                 if not is_rollout_goal_state:
                     if i > 1:
                         rollout_board.change_player()
+                    #print("#################&&&&&&&&&&&&&&&&&&&&")
+                    #print("state now", rollout_board.get_state())
                     action = self.get_suggested_action(board=rollout_board)
                     if self.verbose:
                         print("#### Roll nr ", i)
@@ -234,6 +247,9 @@ class MTCS():
             node.is_leaf = False
     
     def choose_next_node(self, node):
+        #print("jhgkgfkhgfhgfhgf",node.state) 
+        #print("childrens",len(node.childrens))
+        #print("qvaluesa", len(node.q_values))
         #Calculate usa values and do the best greedy choice relate to the player playing
         if self.verbose:
             print("##### Choosing next Node")
@@ -241,11 +257,21 @@ class MTCS():
         if self.board.active_player == 1:
             for action in node.q_values:
                 tmp[action] = node.q_values[action] + self.calculate_usa(node, action) 
-            choosen_action = max(tmp, key= tmp.get)
+            #choosen_action = max(tmp, key= tmp.get)
+            max_val = max(tmp.items(), key=operator.itemgetter(1))
+            max_keys = [k for k, v in tmp.items() if v == max_val[1]]
+            choosen_action = random.choice(max_keys)
+            #print("max_val", max_val)
+            #print("max_keys", max_keys)
+            #print("tmp", tmp.values())
+            #print("random choice", choosen_action)
         elif self.board.active_player == 2:
             for action in node.q_values:
                 tmp[action] = node.q_values[action] - self.calculate_usa(node, action) 
-            choosen_action = min(tmp, key= tmp.get)
+            #choosen_action = min(tmp, key= tmp.get)
+            min_val = min(tmp.items(), key=operator.itemgetter(1))
+            min_keys = [k for k, v in tmp.items() if v == min_val[1]]
+            choosen_action = random.choice(min_keys)
         next_node = node.childrens[choosen_action]
         next_node.parent = node
         return next_node

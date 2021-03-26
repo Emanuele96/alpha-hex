@@ -7,7 +7,7 @@
     "frame_latency_rollout":100,
     "board_size" : 5,
     "episodes": 20,
-    "anet_lr": 0.0005,
+    "anet_lr": 0.00005,
     "anet_layers": [
         {
             "neurons": 20,
@@ -20,10 +20,10 @@
     ],
     "anet_optim" : "adam",
     "epsilon": 0.5,
-    "number_of_simulations": 200,
+    "number_of_simulations": 400,
     "number_cached_anet": 5,
-    "number_tournament_games": 25,
+    "number_tournament_games": 10,
     "actors_to_save": 5 ,
-    "tournament_players":["0", "40", "80", "120", "160"],
+    "tournament_players":["0", "5", "10", "15", "20"],
     "use_cuda": false
 }

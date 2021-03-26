@@ -4,6 +4,13 @@ import ann_model
 import torch.optim as optim
 import torch.nn as nn
 import torch
+import math
+def cross_entropy_loss(prediction, label):
+    loss = 0
+    for i in range(len(prediction[0])):
+        loss += label[0][i] * math.log(prediction[0][i])
+    loss = loss * (-1)
+    return loss
 class Actor:
 
     def __init__(self, cfg):
@@ -17,8 +24,9 @@ class Actor:
             self.input_size = cfg["board_size"] ** 2 + 1
             self.model = ann_model.Net(self.input_size,self.nn_layers, self.use_cuda)
             self.optimizer =  self.initiate_optim(cfg["anet_optim"])
-            self.loss_fn =nn.BCELoss() # nn.CrossEntropyLoss()#nn.MSELoss(reduction="mean")
+            #self.loss_fn = nn.MSELoss(reduction="mean")# nn.CrossEntropyLoss()  nn.BCELoss()
             self.trained_episodes = 0
+
 
     def initiate_optim(self, optim_name):
         if optim_name == "sdg":
@@ -77,8 +85,9 @@ class Actor:
             x_sample = torch.from_numpy(x_train[i]).float()
             y_label = torch.from_numpy(y_train[i]).float()
             y_prediction = self.model(x_sample)
-            loss = self.loss_fn(y_prediction, y_label)
-
+            loss = cross_entropy_loss(y_prediction, y_label)
+            loss.requires_grad = True
+            print(loss)
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
