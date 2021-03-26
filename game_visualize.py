@@ -64,8 +64,8 @@ if __name__ == "__main__":
     p1 = 0
     p2 = 0
     if args.train:
-        for i in range(cfg["episodes"]):
-            if i % (cfg["episodes"] / cfg["actors_to_save"]) == 0:
+        for i in range(cfg["episodes"]+1):
+            if i % (cfg["episodes"] / cfg["actors_to_save"]+1)== 0:
                 filename = "actor_" + str(actor.trained_episodes) +"_ep.pkl"  
                 pickle_file("data/actor", filename, actor)
             move = 1
@@ -132,7 +132,7 @@ if __name__ == "__main__":
             #mcts.reset()
             board = simworld.Board(cfg["board_size"], "Main Game", cfg["board_visualize"], cfg["verbose"])
             mcts = mc.MTCS(board.get_state(), actor, buffer, cfg)
-            x_train, y_train = buffer.get_training_episode()
+            x_train, y_train = buffer.get_training_dataset()
             actor.train(x_train, y_train)
 
         print("All episodes run. The stats are:")

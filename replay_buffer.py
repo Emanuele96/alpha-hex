@@ -12,7 +12,9 @@ class Replay_buffer():
     def add_train_case(self, train_case):
         self.x_train_episode.append(train_case[0])
         self.y_train_episode.append(train_case[1])
-
+        self.x_train.append(train_case[0])
+        self.y_train.append(train_case[1])
+        
     def get_training_episode(self):
         self.x_train.extend(self.x_train_episode)
         self.y_train.extend(self.y_train_episode)
