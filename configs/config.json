@@ -1,9 +1,9 @@
 {
     "verbose" : false,
-    "board_visualize": false, 
-    "rollout_visualize": false,
+    "board_visualize": true, 
+    "rollout_visualize": true,
     "tournament_visualize":true,
-    "frame_latency": 500,
+    "frame_latency": 100,
     "frame_latency_rollout":100,
     "board_size" : 5,
     "episodes": 50,

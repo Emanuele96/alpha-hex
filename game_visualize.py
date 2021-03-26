@@ -105,6 +105,7 @@ if __name__ == "__main__":
                     move += 1
                     print("After\n", board.get_state()[0,1:].reshape(1, cfg["board_size"], cfg["board_size"]))
                     is_main_game_goal = board.is_goal_state()
+                    new_pil_frame = board.show_board()
 
                 if cfg["board_visualize"]:
                     #Performe the routine for visualization

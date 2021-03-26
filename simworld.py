@@ -128,7 +128,7 @@ class Board:
         for node in self.pawns.keys():
             all_nodes.append(node)
         for i in range(adj_matrix.shape[0]):
-            G.add_node(i, coordinates = self.pawns[all_nodes[i]].coordinates,  populated_by = self.pawns[all_nodes[i]].populated_by, diamond_plan = all_nodes[i][0] + all_nodes[i][1])
+            G.add_node(i, coordinates = self.pawns[all_nodes[i]].coordinates,  populated_by = self.pawns[all_nodes[i]].populated_by, diamond_plan = all_nodes[i][0] + all_nodes[i][1], is_win_path=False)
         if self.verbose:
             print(adj_matrix)
             print(G.nodes.data())
@@ -152,16 +152,25 @@ class Board:
         nodes = list(self.graph.nodes(data=True))
         for node in nodes:
             color = ""
+            #Empty node
             if node[1]["populated_by"] == 0:                
                 color = "#ffffff"
-            elif node[1]["populated_by"] == 1:                
+            #Node populated by 1. player
+            elif node[1]["populated_by"] == 1 and not node[1]["is_win_path"]:                
                 color = "#ff0000"
-            elif node[1]["populated_by"] == 2:                
+            #Node populated by 1. player and in win path
+            elif node[1]["populated_by"] == 1 and node[1]["is_win_path"]:                
+                color = "#ffae00"
+            #Node populated by 2. player
+            elif node[1]["populated_by"] == 2 and not node[1]["is_win_path"]:                
                 color = "#000000"
+            #Node populated by 2. player and in win path
+            elif node[1]["populated_by"] == 2 and node[1]["is_win_path"]:                
+                color = "#787878"
             else:
                 color = "#ffff00"
             nodes_color.append(color)
-        options = {'node_size': 400,'width': 1, 'pos' : position, 'with_labels':False, 'font_weight':'bold', 'node_color': nodes_color, 'linewidths':5}
+        options = {'node_size': 400,'width': 1, 'pos' : position, 'with_labels':False, 'font_weight':'bold', 'node_color': nodes_color, 'linewidths':50}
         nx.draw(self.graph, **options )
         #outline each node and specify linewidt to show an empty node. ax.collection is the path collection of matplotlib.
         # documentation :  https://matplotlib.org/3.3.3/api/collections_api.html
@@ -174,10 +183,16 @@ class Board:
         img = img.transpose(Image.FLIP_LEFT_RIGHT)
         plt.clf()
         #Print the move 
-        font = ImageFont.truetype('arial.ttf', 30)
+        font = ImageFont.truetype('arial.ttf', 20)
         draw = ImageDraw.Draw(img)
         draw.text((0, 0), self.board_name, (0,0,0), font=font)
-        draw.text((0, 60),"Move nr. " + str(self.move_counter), (0,0,0), font=font)
+        draw.text((0, 30),"Move nr. " + str(self.move_counter) + " - P" +str(int(self.active_player)), (0,0,0), font=font)
+        
+        draw.text((90, 90),"BLACK", (0,0,0), font=font)
+        draw.text((500, 90),"RED", (255,0,0), font=font)
+        draw.text((90, 350),"RED", (255,0,0), font=font)
+        draw.text((500, 350),"BLACK", (0,0,0), font=font)
+
         return img
 
     def matplotlib_to_pil(self, fig):
@@ -228,7 +243,12 @@ class Board:
             if is_win:
                 print("##### Win Path: \n")
                 for node in reversed(win_path):
-                    print(node.coordinates, "\n")
+                    print(node, "\n")
+        if self.visualize:
+            nodes = list(self.graph.nodes(data=True))
+            for node in nodes:
+                if node[1]["coordinates"] in win_path:
+                    node[1]["is_win_path"] = True
         return is_win
 
     def DFS_path_check(self, node, visited_nodes, win_path, active_player, verbose = False):
@@ -237,10 +257,10 @@ class Board:
         #Perform recursive DFS with a list of visited nodes and domain specific terminal path settings.
         visited_nodes.append(node)
         if node.coordinates[0] == self.size - 1 and active_player == 1:
-            win_path.append(node)
+            win_path.append(node.coordinates)
             return True
         elif node.coordinates[1] == self.size - 1 and active_player == 2:
-            win_path.append(node)
+            win_path.append(node.coordinates)
             return True    
         is_terminal_path = False
         for adj_node in node.neighbours:
@@ -249,7 +269,7 @@ class Board:
             if (adj_node.populated_by == active_player) and (adj_node not in visited_nodes):
                 is_terminal_path = self.DFS_path_check(adj_node, visited_nodes,win_path, active_player = active_player, verbose=verbose)
             if is_terminal_path:
-                win_path.append(node)
+                win_path.append(node.coordinates)
                 return True
         return False
 

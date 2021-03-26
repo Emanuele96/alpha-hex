@@ -50,7 +50,7 @@ class MTCS():
         self.epsilon = cfg["epsilon"]
         self.number_of_simulations = cfg["number_of_simulations"]
         self.visualize = cfg["rollout_visualize"]
-        self.board = simworld.Board(cfg["board_size"],"Rollout1", self.visualize, cfg["verbose"])
+        self.board = simworld.Board(cfg["board_size"],"Rollout", self.visualize, cfg["verbose"])
         self.initialize_board()
         self.replay_buffer = replay_buffer
         self.verbose = cfg["verbose"]
@@ -201,6 +201,7 @@ class MTCS():
                                 pygame.quit()
                                 end_visualization = True
                 is_rollout_goal_state = rollout_board.is_goal_state()
+                new_pil_frame = rollout_board.show_board()
             reward =  rollout_board.get_reward()
             del rollout_board
         else: 
