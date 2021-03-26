@@ -90,7 +90,7 @@ class Board:
         if state_t is None:
             state_t = self.state_t
         next_state = np.zeros(self.state_t.shape) + self.state_t
-        next_state[:, 1:] += action
+        next_state[:,1:] += action
         if change_player:
             next_player = self.get_next_player()
             next_state[0,0] = next_player
@@ -187,25 +187,28 @@ class Board:
         bufffer.seek(0)
         return Image.open(bufffer) 
                     
-    def get_all_possible_actions(self):
+    def get_all_possible_actions(self, state = None):
+        if state is None:
+            state = self.state_t
         #Analize the board and check all possible actions. 
         all_actions = list(())
         tot_possible_actions = self.size**2
         for i in range(tot_possible_actions):
-            if self.state_t[0, i+1] == 0:
+            if state[0, i+1] == 0:
                 action = np.zeros((1, tot_possible_actions))
-                action[0, i] = self.active_player
+                action[0, i] = state[0][0]
                 all_actions.append(action)                         
         return all_actions
 
     def is_goal_state(self, verbose=False):
-        '''if self.board_name== "Main Game":
+        if self.board_name== "Rollout":
             print("**************Start goal check *************")
             a = np.zeros((1, 5, 5))
             for n in self.pawns.keys():
                 a[0][n] = self.pawns[n].populated_by
             print("check actual board\n", a)
-            print("state is ", self.state_t)'''
+            print("state is ", self.state_t)
+            print("active player", self.active_player)
         #Start a DFS from each node on the active player side and check if there is a path to the other side
         visited_nodes = list()
         win_path = list()
@@ -234,8 +237,8 @@ class Board:
         return is_win
 
     def DFS_path_check(self, node, visited_nodes,win_path, verbose = False):
-        '''if self.board_name== "Main Game":
-            print("Visited node", node.coordinates)'''
+        if self.board_name== "Rollout":
+            print("Visited node", node.coordinates)
 
         if self.verbose:
             print("DFS visited node ", node.coordinates)

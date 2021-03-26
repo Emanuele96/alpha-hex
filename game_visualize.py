@@ -91,6 +91,10 @@ if __name__ == "__main__":
                 if not is_main_game_goal:
                     if move > 1:
                         board.change_player()
+                        print("isgoal ", is_main_game_goal)
+                        print("choosen action", choosen_action)
+                        print("main game board state", board.get_state())
+                        print("mcts state", mcts.root.state)
                         mcts.prune_tree(choosen_action)
                         print("*****************************************************")
                         print("Move nr. ", move, " - Player ", int(board.active_player))
@@ -134,7 +138,7 @@ if __name__ == "__main__":
             mcts = mc.MTCS(board.get_state(), actor, buffer, cfg)
             x_train, y_train = buffer.get_training_episode()
             actor.train(x_train, y_train)
-            
+
         print("All episodes run. The stats are:")
         print("P1 won : ", p1, " P2 won : ", p2)
         print("Saving Replay Buffer to disc....")
