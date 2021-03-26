@@ -89,10 +89,10 @@ class Board:
         #return the state t1 from state t taken action t. NB: This will not update the state of the board
         if state_t is None:
             state_t = self.state_t
-        next_state = np.zeros(self.state_t.shape) + self.state_t
+        next_state = np.zeros(state_t.shape) + state_t
         next_state[:,1:] += action
-        if change_player:
-            next_player = self.get_next_player()
+        if change_player:            
+            next_player = self.get_next_player(state_t[0][0])
             next_state[0,0] = next_player
         if self.verbose:
             print("Get next state ", next_state)
@@ -200,7 +200,7 @@ class Board:
                 all_actions.append(action)                         
         return all_actions
 
-    def is_goal_state(self, verbose=False):
+    def is_goal_state(self, verbose=False, active_player = None):
         if self.board_name== "Rollout":
             print("**************Start goal check *************")
             a = np.zeros((1, 5, 5))
@@ -210,10 +210,13 @@ class Board:
             print("state is ", self.state_t)
             print("active player", self.active_player)
         #Start a DFS from each node on the active player side and check if there is a path to the other side
+        if active_player is None:
+            active_player = self.active_player
+        
         visited_nodes = list()
         win_path = list()
         is_win = False
-        if self.active_player == 1:
+        if active_player == 1:
             start_coordinate = lambda i : (0, i)
         else:
             start_coordinate = lambda i : (i, 0)
@@ -222,21 +225,21 @@ class Board:
             node = self.pawns[start_coordinate(i)]
             if self.verbose:
                 print("valuating node ",node.coordinates )
-                print("node populated by p", self.active_player, " ", node.populated_by == self.active_player)
-            if (node.populated_by == self.active_player) and (node not in visited_nodes):
-                is_win = self.DFS_path_check(node, visited_nodes, win_path, verbose=verbose)
+                print("node populated by p", active_player, " ", node.populated_by == active_player)
+            if (node.populated_by == active_player) and (node not in visited_nodes):
+                is_win = self.DFS_path_check(node, visited_nodes, win_path, active_player=active_player, verbose=verbose)
             if is_win:
                 break
         if self.verbose:
             print(self.get_state()[0,1:].reshape(1,self.size, self.size))
-            print("#####Is Goal State for p", self.active_player, "? ", is_win)
+            print("#####Is Goal State for p", active_player, "? ", is_win)
             if is_win:
                 print("##### Win Path: \n")
                 for node in reversed(win_path):
                     print(node.coordinates, "\n")
         return is_win
 
-    def DFS_path_check(self, node, visited_nodes,win_path, verbose = False):
+    def DFS_path_check(self, node, visited_nodes, win_path, active_player, verbose = False):
         if self.board_name== "Rollout":
             print("Visited node", node.coordinates)
 
@@ -244,18 +247,18 @@ class Board:
             print("DFS visited node ", node.coordinates)
         #Perform recursive DFS with a list of visited nodes and domain specific terminal path settings.
         visited_nodes.append(node)
-        if node.coordinates[0] == self.size - 1 and self.active_player == 1:
+        if node.coordinates[0] == self.size - 1 and active_player == 1:
             win_path.append(node)
             return True
-        elif node.coordinates[1] == self.size - 1 and self.active_player == 2:
+        elif node.coordinates[1] == self.size - 1 and active_player == 2:
             win_path.append(node)
             return True    
         is_terminal_path = False
         for adj_node in node.neighbours:
             if verbose:
-                print("Adj Node ", adj_node.coordinates, " is populated by ", self.active_player, "  ", adj_node.populated_by == self.active_player, "   and is visited before  ", adj_node in visited_nodes)
-            if (adj_node.populated_by == self.active_player) and (adj_node not in visited_nodes):
-                is_terminal_path = self.DFS_path_check(adj_node, visited_nodes,win_path)
+                print("Adj Node ", adj_node.coordinates, " is populated by ", active_player, "  ", adj_node.populated_by == active_player, "   and is visited before  ", adj_node in visited_nodes)
+            if (adj_node.populated_by == active_player) and (adj_node not in visited_nodes):
+                is_terminal_path = self.DFS_path_check(adj_node, visited_nodes,win_path, active_player = active_player, verbose=verbose)
             if is_terminal_path:
                 win_path.append(node)
                 return True

@@ -12,15 +12,19 @@ class Tournament():
         self.wins = [0] * (len(players))
         self.loss = [0] * (len(players))
         self.board_size = cfg["board_size"]
-    def run(self, games):
+        self.visualize = cfg["tournament_visualize"]
+        self.games = cfg["number_tournament_games"]
+    def run(self):
+        game_nr =0
         for i in range (len(self.players)):
             p1 = i
             for j in range(len(self.players)):
                 if i == j:
                     break
                 p2 = j
-                for k in range(games):
-                    reward = self.play_game(False, self.players[p1], self.players[p2])
+                for k in range(self.games):
+                    game_nr += 1
+                    reward = self.play_game(game_nr, self.players[p1], self.players[p2])
                     if reward == 1:
                         self.wins[i] += 1
                         self.loss[j] += 1
@@ -29,10 +33,10 @@ class Tournament():
                         self.loss[i] += 1              
         self.plot_results()
 
-    def play_game(self, visualize, p1, p2):
-        board = simworld.Board(self.board_size, visualize, False)
+    def play_game(self, game_nr, p1, p2):
+        board = simworld.Board(self.board_size,"Tournament", self.visualize, False)
         move = 1
-        print("*****************************************************")
+        print("******************** , Game ", str(game_nr), " ********************")
         print("Move nr. ", move, " - Player ", int(board.active_player))
         print("Before\n", board.get_state()[0,1:].reshape(1, self.board_size, self.board_size))
         while not board.is_goal_state():

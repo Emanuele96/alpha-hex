@@ -1,7 +1,8 @@
 {
     "verbose" : false,
     "board_visualize": false, 
-    "rollout_visualize": true,
+    "rollout_visualize": false,
+    "tournament_visualize":true,
     "frame_latency": 500,
     "frame_latency_rollout":100,
     "board_size" : 5,
@@ -21,7 +22,7 @@
     "epsilon": 0.5,
     "number_of_simulations": 20,
     "number_cached_anet": 5,
-    "number_tournament_games": 50,
+    "number_tournament_games": 1,
     "actors_to_save": 5 ,
     "tournament_players":["0", "4", "8", "12", "16"],
     "use_cuda": false

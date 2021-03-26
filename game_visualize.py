@@ -153,4 +153,4 @@ if __name__ == "__main__":
             actor = unpickle_file("data/actor", filename)
             players.append(actor)
         tournament = tournament.Tournament(cfg, players)
-        tournament.run(cfg["number_tournament_games"])
+        tournament.run()
