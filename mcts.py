@@ -201,7 +201,7 @@ class MTCS():
                                 pygame.quit()
                                 end_visualization = True
                 is_rollout_goal_state = rollout_board.is_goal_state()
-                new_pil_frame = rollout_board.show_board()
+                new_pil_frame = rollout_board.update(None)#rollout_board.show_board()
             reward =  rollout_board.get_reward()
             del rollout_board
         else: 
