@@ -54,11 +54,11 @@ if __name__ == "__main__":
     cfg = read_config_from_json(args.config)
     print(cfg)
 
-    buffer = unpickle_file("data/dataset", "buffer.pkl" )
-    if buffer is None:
-        buffer = replay_buffer.Replay_buffer()
     board = simworld.Board(cfg["board_size"], "Main Game", cfg["board_visualize"], cfg["verbose"])
     actor = actor.Actor(cfg)
+    buffer = unpickle_file("data/dataset", "buffer_b" + str(board.size) + ".pkl" )
+    if buffer is None:
+        buffer = replay_buffer.Replay_buffer()
     mcts = mc.MTCS(board.get_state(), actor, buffer, cfg)
 
     p1 = 0
@@ -66,7 +66,7 @@ if __name__ == "__main__":
     if args.train:
         for i in range(cfg["episodes"]+1):
             if i % (cfg["episodes"] / cfg["actors_to_save"]+1)== 0:
-                filename = "actor_" + str(actor.trained_episodes) +"_ep.pkl"  
+                filename = "actor_b" + str(board.size) + "_ep" + str(actor.trained_episodes) +".pkl"  
                 pickle_file("data/actor", filename, actor)
             move = 1
             print("*****************************************************")
@@ -140,14 +140,14 @@ if __name__ == "__main__":
         print("All episodes run. The stats are:")
         print("P1 won : ", p1, " P2 won : ", p2)
         print("Saving Replay Buffer to disc....")
-        pickle_file("data/dataset", "buffer.pkl", buffer)
+        pickle_file("data/dataset", "buffer_b" + str(board.size) + ".pkl", buffer)
         print("Replay Buffer saved.")
     
 
     if args.tournament:
         players = []
         for actor_name in cfg["tournament_players"]:
-            filename ="actor_" + actor_name + "_ep.pkl"
+            filename ="actor_b"+str(board.size)+"_ep" + actor_name + ".pkl"
             actor = unpickle_file("data/actor", filename)
             players.append(actor)
         tournament = tournament.Tournament(cfg, players)

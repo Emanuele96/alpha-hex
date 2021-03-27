@@ -8,7 +8,7 @@ import io
 class Node:
     def __init__(self, coordinates):
         self.coordinates = coordinates
-        self.neighbours = [] #{}
+        self.neighbours = [] 
         # 0 for empty, 1 for player 1 and 2 for player 2
         self.populated_by = 0
     
@@ -212,7 +212,7 @@ class Board:
             if state[0, i+1] == 0:
                 action = np.zeros((1, tot_possible_actions))
                 action[0, i] = state[0][0]
-                all_actions.append(action)                         
+                all_actions.append(action)   
         return all_actions
 
     def is_goal_state(self, verbose=False, active_player = None):
@@ -296,7 +296,6 @@ class Board:
         if action is not None:
             self.populate_pawn(action, self.active_player)
             self.set_state(self.get_next_state(action), True)    
-            #self.set_active_player(self.get_next_player())        
         if self.visualize:
             self.update_graph()
             frame = self.show_board()

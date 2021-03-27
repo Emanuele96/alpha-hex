@@ -90,15 +90,7 @@ class MTCS():
                     #What to do if reached a goal state before rollout?Get reward and backpropagate. 
                     if self.verbose:
                         print("##### Reached goal node before rollout")
-                    for i in range(1):
-                        print("#############&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&#######################")
-                        print(pointer.state)
                 else:
-
-                    #hashed_action = next(iter(pointer.childrens))
-                    #action = np.expand_dims(np.asarray(hashed_action), axis=0)
-                    #pointer = pointer.childrens[hashed_action]
-
                     #Do a random choice of next node
                     pointer = random.choice(list(pointer.childrens.values()))
             elif self.verbose:
@@ -140,8 +132,6 @@ class MTCS():
         return self.board.is_goal_state()
 
     def rollout(self):
-        #print("rollouttttttttttttt")
-        #print(self.board.get_state())
         #Check wether the node to start the rollout is not a goal state for either players. 
         # This rule out some edge cases.
         if not self.board.is_goal_state(active_player=1) and not self.board.is_goal_state(active_player=2):
@@ -168,8 +158,6 @@ class MTCS():
                 if not is_rollout_goal_state:
                     if i > 1:
                         rollout_board.change_player()
-                    #print("#################&&&&&&&&&&&&&&&&&&&&")
-                    #print("state now", rollout_board.get_state())
                     action = self.get_suggested_action(board=rollout_board)
                     if self.verbose:
                         print("#### Roll nr ", i)
@@ -177,14 +165,6 @@ class MTCS():
                         print("##### Active Player: ", rollout_board.active_player)
                         print("##### Choosen Action: ", action)
                     new_pil_frame = rollout_board.update(action)
-                    #a = np.zeros((1, 5, 5))
-                    #for n in rollout_board.pawns.keys():
-                    #    a[0][n] = rollout_board.pawns[n].populated_by
-                    #if False:
-                    #    print("after a\n", a)
-                    #    print("state", rollout_board.get_state())
-                    #    print("is goal for p",rollout_board.active_player, " : ", rollout_board.is_goal_state())
-                    #    print("**********************************************")
                     i += 1
 
                 if self.visualize:
@@ -248,9 +228,6 @@ class MTCS():
             node.is_leaf = False
     
     def choose_next_node(self, node):
-        #print("jhgkgfkhgfhgfhgf",node.state) 
-        #print("childrens",len(node.childrens))
-        #print("qvaluesa", len(node.q_values))
         #Calculate usa values and do the best greedy choice relate to the player playing
         if self.verbose:
             print("##### Choosing next Node")

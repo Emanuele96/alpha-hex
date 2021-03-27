@@ -44,11 +44,6 @@ class Actor:
         filtered_action_distribution = self.filter_action_distribution(action_distribution, possible_actions, state[0][0])
         #Find the index corrisponding the action with the most visits. Gets the first one if multiple actions has the same visit value
         choosen_action = self.get_max_action_from_distribution(filtered_action_distribution, state[0][0])
-        
-        '''choosen_action_index = np.where(filtered_action_distribution[0] == np.amax(filtered_action_distribution[0]))[0][0]
-        #Create a new action and popolate it with the active player code in the choosen_action_index position
-        choosen_action = np.zeros(possible_actions[0].shape)
-        choosen_action[0][choosen_action_index] = state[0][0]'''
         return choosen_action
 
     def filter_action_distribution(self, action_distribution, possible_actions, active_player):
@@ -87,14 +82,12 @@ class Actor:
             y_prediction = self.model(x_sample)
             loss = cross_entropy_loss(y_prediction, y_label)
             loss.requires_grad = True
-            print(loss)
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
         self.trained_episodes += 1
     def reset(self):
         return -1
-        #self.e_decay()
 
     def e_decay(self):
         #Decay the e sigma factor for the e greedy strategy.

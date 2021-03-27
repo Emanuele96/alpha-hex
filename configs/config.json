@@ -1,12 +1,12 @@
 {
     "verbose" : false,
-    "board_visualize": true, 
+    "board_visualize": false, 
     "rollout_visualize": false,
     "tournament_visualize":true,
     "frame_latency": 0,
     "frame_latency_rollout":100,
-    "board_size" : 5,
-    "episodes": 50,
+    "board_size" : 6,
+    "episodes": 20,
     "anet_lr": 0.00005,
     "anet_layers": [
         {
@@ -14,7 +14,7 @@
             "activation": "tanh"
         },
         {
-            "neurons": 25,
+            "neurons": 36,
             "activation": "tanh"
         }
     ],
@@ -24,6 +24,6 @@
     "number_cached_anet": 5,
     "number_tournament_games": 10,
     "actors_to_save": 5 ,
-    "tournament_players":["0", "5", "10", "15", "20", "33", "44"],
+    "tournament_players":["0", "5", "10", "15", "20"],
     "use_cuda": false
 }
