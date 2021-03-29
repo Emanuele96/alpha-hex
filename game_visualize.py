@@ -9,6 +9,8 @@ import pickle
 import numpy as np
 from pathlib import Path
 import pygame
+from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 # Tools 
 def read_config_from_json(filename):
@@ -49,29 +51,36 @@ if __name__ == "__main__":
     parser.add_argument('--config', default="config.json", type=str, help="Select configuration file to load")
     parser.add_argument('--train', default=False, type=bool, help="Choose whether to train actors or not")
     parser.add_argument('--tournament', default=True, type=bool, help="Choose whether to run a tournaments or not")
+    parser.add_argument('--actor', default="none", type=str, help="Select actor file to load")
 
     args = parser.parse_args()
     cfg = read_config_from_json(args.config)
     print(cfg)
 
     board = simworld.Board(cfg["board_size"], "Main Game", cfg["board_visualize"], cfg["verbose"])
-    actor = actor.Actor(cfg)
+    if args.actor == "none":
+        actor = actor.Actor(cfg)
+    else: 
+        actor = unpickle_file("data/actor", args.actor + ".pkl" )
     buffer = unpickle_file("data/dataset", "buffer_b" + str(board.size) + ".pkl" )
     if buffer is None:
         buffer = replay_buffer.Replay_buffer()
     mcts = mc.MTCS(board.get_state(), actor, buffer, cfg)
 
+    losses = list()
     p1 = 0
     p2 = 0
     if args.train:
-        for i in range(cfg["episodes"]+1):
+        for i in tqdm(range(cfg["episodes"]+1), "Episode ", position = 0):
             if i % (cfg["episodes"] / cfg["actors_to_save"]+1)== 0:
                 filename = "actor_b" + str(board.size) + "_ep" + str(actor.trained_episodes) +".pkl"  
                 pickle_file("data/actor", filename, actor)
             move = 1
-            print("*****************************************************")
-            print("Move nr. ", move, " - Player ", int(board.active_player))
-            print("Before\n", board.get_state()[0,1:].reshape(1, cfg["board_size"], cfg["board_size"]))
+
+
+            #print("*****************************************************")
+            #print("Move nr. ", move, " - Player ", int(board.active_player))
+            #print("Before\n", board.get_state()[0,1:].reshape(1, cfg["board_size"], cfg["board_size"]))
             
             if  cfg["board_visualize"]:
                 pygame.init()
@@ -92,18 +101,18 @@ if __name__ == "__main__":
                     if move > 1:
                         board.change_player()
                         mcts.prune_tree(choosen_action)
-                        print("*****************************************************")
-                        print("Move nr. ", move, " - Player ", int(board.active_player))
-                        print("Before\n", board.get_state()[0,1:].reshape(1, cfg["board_size"], cfg["board_size"]))
+                        #print("*****************************************************")
+                        #print("Move nr. ", move, " - Player ", int(board.active_player))
+                        #print("Before\n", board.get_state()[0,1:].reshape(1, cfg["board_size"], cfg["board_size"]))
                     action_distribution = mcts.run_simulation()
-                    print("ACTion distrisbution", action_distribution)
+                    #print("ACTion distrisbution", action_distribution)
                     #hashed_action = max(action_distribution, key= action_distribution.get)
                     #choosen_action = np.expand_dims(np.asarray(hashed_action), axis=0)
                     choosen_action = actor.get_max_action_from_distribution(action_distribution, board.active_player)
                     
                     new_pil_frame = board.update(choosen_action)
                     move += 1
-                    print("After\n", board.get_state()[0,1:].reshape(1, cfg["board_size"], cfg["board_size"]))
+                    #print("After\n", board.get_state()[0,1:].reshape(1, cfg["board_size"], cfg["board_size"]))
                     is_main_game_goal = board.is_goal_state()
                     new_pil_frame = board.update(None) #board.show_board()
 
@@ -123,8 +132,8 @@ if __name__ == "__main__":
                 
                 
             reward = board.get_reward()
-            print("*****************************************************")
-            print("Episode ", i, " Finished. Reward: ", reward )
+            #print("*****************************************************")
+            #print("Episode ", i, " Finished. Reward: ", reward )
             if reward == 1:
                 p1 += 1
             elif reward == -1:
@@ -135,14 +144,25 @@ if __name__ == "__main__":
             board = simworld.Board(cfg["board_size"], "Main Game", cfg["board_visualize"], cfg["verbose"])
             mcts = mc.MTCS(board.get_state(), actor, buffer, cfg)
             x_train, y_train = buffer.get_training_dataset()
-            actor.train(x_train, y_train)
+            #buffer.flush_episode()
+            loss = actor.train(x_train, y_train)
+            losses.append(loss)
+            if i % 5 == 0:
+                pickle_file("data/dataset", "buffer_b" + str(board.size) + ".pkl", buffer)
+            
+            #Alternate episode, change p1 or p2 starting
+            if i % 2 == 0:
+               board.change_player() 
 
         print("All episodes run. The stats are:")
         print("P1 won : ", p1, " P2 won : ", p2)
         print("Saving Replay Buffer to disc....")
         pickle_file("data/dataset", "buffer_b" + str(board.size) + ".pkl", buffer)
         print("Replay Buffer saved.")
-    
+
+        time = np.linspace(0, len(losses), num=len(losses))
+        plt.plot(time, losses)
+        plt.show()
 
     if args.tournament:
         players = []

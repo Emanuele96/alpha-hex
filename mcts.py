@@ -6,6 +6,7 @@ from game_visualize import pil_image_to_pygame
 import pygame
 import random
 import operator
+from tqdm import tqdm
 
 class MTCS_node():
     
@@ -69,41 +70,41 @@ class MTCS():
         simulation = 1
         #Cache the board. This will be the same for each simulation
         cached_simulation_board = copy.deepcopy(self.board)
-        while simulation < self.number_of_simulations:
-            if self.verbose:
+        for simulation in tqdm(range(self.number_of_simulations), " Simulation ", position = 1, leave = False):
+            if self.verbose == 1:
                 print("### Begin simulation nr ", simulation, ", starting at root: ", self.root.state)
             pointer = self.root
             self.board.set_state(self.root.state, True)
             #Check wether pointer points to a leaf node
             #While the node is not a leaf node, point to the next one using the active player and tree policy
             while not pointer.is_leaf:
-                if self.verbose:
+                if self.verbose == 1:
                     print("Not leaf node, select next node with tree policy")
                 pointer = self.choose_next_node(pointer)
             #If the node has been sampled before or it is the root, expand it, select the first of the childrens and run a rollout and backpropagation
             if pointer.total_visits > 0 or pointer.is_root:
-                if self.verbose:
+                if self.verbose == 1:
                     print("### Leaf node sampled before or is root. Expanding Node and selecting a child.")
                 self.expand_leaf(pointer)
                 #Bruk aktoren?
                 if len(pointer.childrens)== 0:
                     #What to do if reached a goal state before rollout?Get reward and backpropagate. 
-                    if self.verbose:
+                    if self.verbose == 1:
                         print("##### Reached goal node before rollout")
                 else:
                     #Do a random choice of next node
                     pointer = random.choice(list(pointer.childrens.values()))
-            elif self.verbose:
+            elif self.verbose == 1:
                 print("### Leaf node never sampled before.")
             #Update the board to the leaf node state
             self.board.set_state(pointer.state, True)
-            if self.verbose:
+            if self.verbose == 1:
                 print("### Starting rollout from ", pointer)
             reward = self.rollout()
-            if self.verbose:
+            if self.verbose == 1:
                 print("### Rollout result ", reward, ". Backpropagating till root")
             self.backpropagate(reward, pointer)
-            simulation += 1
+            #simulation += 1
             self.board = copy.deepcopy(cached_simulation_board)
         action_distribution = self.get_actions_distribution()
         #del cached_simulation_board
@@ -159,7 +160,7 @@ class MTCS():
                     if i > 1:
                         rollout_board.change_player()
                     action = self.get_suggested_action(board=rollout_board)
-                    if self.verbose:
+                    if self.verbose == 2:
                         print("#### Roll nr ", i)
                         print("##### Actual State: ", rollout_board.get_state())
                         print("##### Active Player: ", rollout_board.active_player)
@@ -203,17 +204,17 @@ class MTCS():
             pointer.increase_branch_visit(action_used)
             pointer.increase_total_amount(action_used, reward)
             pointer.update_q_value(action_used)
-            if self.verbose:
+            if self.verbose == 1:
                 backpropagate_path.append(pointer)
-        if self.verbose:
+        if self.verbose == 1:
             print("####Backpropagation successfull. Backpropagate Path:\n")
             for n in backpropagate_path:
                 print(n.state)
 
     def expand_leaf(self, node):
         self.board.set_state(node.state, True)
-        if not self.board.is_goal_state():
-            if self.verbose:
+        if not self.board.is_goal_state(active_player=1) and not self.board.is_goal_state(active_player=2):
+            if self.verbose == 1:
                 print("##### Expanding Node ", node)
             possible_actions = self.board.get_all_possible_actions(node.state)
             for action in possible_actions:
@@ -229,8 +230,9 @@ class MTCS():
     
     def choose_next_node(self, node):
         #Calculate usa values and do the best greedy choice relate to the player playing
-        if self.verbose:
+        if self.verbose == 1:
             print("##### Choosing next Node")
+            print("From ", node.state)
         tmp = dict()
         if self.board.active_player == 1:
             for action in node.q_values:

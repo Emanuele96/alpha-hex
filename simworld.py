@@ -34,7 +34,7 @@ class Board:
 
     def find_valid_neighbours(self,node):
         #find all possible neighbours using defined direction rules. Save thoose neighbours in the neighboard-list of the node
-        if self.verbose:
+        if self.verbose == 3:
             print ("node: " + str(node.coordinates))
 
         possible_neighbors = ((0,-1),(-1,0),(-1,1),(0,1),(1,0),(1,-1))
@@ -42,7 +42,7 @@ class Board:
             tmp_coordinate = (node.coordinates[0] + possible_neighbor[0], node.coordinates[1] + possible_neighbor[1])
             if tmp_coordinate != node.coordinates and  tmp_coordinate[0] >=0 and tmp_coordinate[0] < self.size and tmp_coordinate[1] >= 0 and tmp_coordinate[1] < self.size:
                 if self.pawns[tmp_coordinate] not in node.neighbours:
-                    if self.verbose:
+                    if self.verbose == 3:
                         print("Neighbours coordinates: " + str(tmp_coordinate))
                     node.neighbours.append(self.pawns[tmp_coordinate])
 
@@ -94,7 +94,7 @@ class Board:
         if change_player:            
             next_player = self.get_next_player(state_t[0][0])
             next_state[0,0] = next_player
-        if self.verbose:
+        if self.verbose == 2:
             print("Get next state ", next_state)
         return next_state
 
@@ -129,7 +129,7 @@ class Board:
             all_nodes.append(node)
         for i in range(adj_matrix.shape[0]):
             G.add_node(i, coordinates = self.pawns[all_nodes[i]].coordinates,  populated_by = self.pawns[all_nodes[i]].populated_by, diamond_plan = all_nodes[i][0] + all_nodes[i][1], is_win_path=False)
-        if self.verbose:
+        if self.verbose == 3:
             print(adj_matrix)
             print(G.nodes.data())
         return G
@@ -138,7 +138,7 @@ class Board:
         #Iterate foreach node in the graph and syncronize attributes with the new values
         nodes = list(self.graph.nodes(data=True))
         for node in nodes:
-            if self.verbose:
+            if self.verbose == 3:
                 print(node)
             coordinates = node[1]["coordinates"]
             node[1]["populated_by"] = self.pawns[coordinates].populated_by
@@ -230,14 +230,14 @@ class Board:
         for i in range(self.size):
             #print("start coordinates", start_coordinate(i))
             node = self.pawns[start_coordinate(i)]
-            if self.verbose:
+            if self.verbose == 3:
                 print("valuating node ",node.coordinates )
                 print("node populated by p", active_player, " ", node.populated_by == active_player)
             if (node.populated_by == active_player) and (node not in visited_nodes):
                 is_win = self.DFS_path_check(node, visited_nodes, win_path, active_player=active_player, verbose=verbose)
             if is_win:
                 break
-        if self.verbose:
+        if self.verbose == 3:
             print(self.get_state()[0,1:].reshape(1,self.size, self.size))
             print("#####Is Goal State for p", active_player, "? ", is_win)
             if is_win:
@@ -252,7 +252,7 @@ class Board:
         return is_win
 
     def DFS_path_check(self, node, visited_nodes, win_path, active_player, verbose = False):
-        if self.verbose:
+        if self.verbose == 3:
             print("DFS visited node ", node.coordinates)
         #Perform recursive DFS with a list of visited nodes and domain specific terminal path settings.
         visited_nodes.append(node)
@@ -264,7 +264,7 @@ class Board:
             return True    
         is_terminal_path = False
         for adj_node in node.neighbours:
-            if verbose:
+            if verbose == 3:
                 print("Adj Node ", adj_node.coordinates, " is populated by ", active_player, "  ", adj_node.populated_by == active_player, "   and is visited before  ", adj_node in visited_nodes)
             if (adj_node.populated_by == active_player) and (adj_node not in visited_nodes):
                 is_terminal_path = self.DFS_path_check(adj_node, visited_nodes,win_path, active_player = active_player, verbose=verbose)
@@ -275,11 +275,13 @@ class Board:
 
     def get_reward(self):
         #return reward for being in state self.state_t at time t for player_id
-        if self.is_goal_state():
-            if self.active_player == 1:
-                return 1
+        if self.is_goal_state(active_player=1):
+            return 1
+        elif self.is_goal_state(active_player=2):
             return -1
-        return 0        
+        else:
+            print("ERRRORRRRRRRRRRRRRRRRRR")
+            return 0        
     def populate_pawn(self,action, player_id):
         #Populate pawn with player_id dictated by action
         for i in range(action.shape[1]):

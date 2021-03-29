@@ -24,12 +24,12 @@ class Actor:
             self.input_size = cfg["board_size"] ** 2 + 1
             self.model = ann_model.Net(self.input_size,self.nn_layers, self.use_cuda)
             self.optimizer =  self.initiate_optim(cfg["anet_optim"])
-            #self.loss_fn = nn.MSELoss(reduction="mean")# nn.CrossEntropyLoss()  nn.BCELoss()
+            self.loss_fn = nn.KLDivLoss()#(reduction = 'batchmean') #nn.MSELoss(reduction="mean")# nn.CrossEntropyLoss()  nn.BCELoss()
             self.trained_episodes = 0
 
 
     def initiate_optim(self, optim_name):
-        if optim_name == "sdg":
+        if optim_name == "sgd":
             return optim.SGD(self.model.parameters(), lr=self.lr)
         elif optim_name == "adam":
             return optim.Adam(self.model.parameters(), lr=self.lr)
@@ -79,13 +79,16 @@ class Actor:
         for i in range(len(x_train)):
             x_sample = torch.from_numpy(x_train[i]).float()
             y_label = torch.from_numpy(y_train[i]).float()
-            y_prediction = self.model(x_sample)
-            loss = cross_entropy_loss(y_prediction, y_label)
+            prediction = self.model(x_sample)
+            loss = cross_entropy_loss(prediction, y_label)
             loss.requires_grad = True
+            #loss = self.loss_fn(prediction, y_label)
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
+            #print(loss)
         self.trained_episodes += 1
+        return loss
     def reset(self):
         return -1
 
