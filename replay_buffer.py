@@ -31,3 +31,4 @@ class Replay_buffer():
     def flush_episode(self):
         self.x_train_episode = list()
         self.y_train_episode = list()
+        self.dataset = dict()

@@ -24,8 +24,9 @@ class Actor:
             self.input_size = cfg["board_size"] ** 2 + 1
             self.model = ann_model.Net(self.input_size,self.nn_layers, self.use_cuda)
             self.optimizer =  self.initiate_optim(cfg["anet_optim"])
-            self.loss_fn = nn.KLDivLoss()#(reduction = 'batchmean') #nn.MSELoss(reduction="mean")# nn.CrossEntropyLoss()  nn.BCELoss()
+            self.loss_fn = nn.MSELoss()#reduction="mean") #nn.KLDivLoss(reduction = 'batchmean') # nn.CrossEntropyLoss()  nn.BCELoss()
             self.trained_episodes = 0
+            self.minibatch_size = cfg["minibatch_size"]
 
 
     def initiate_optim(self, optim_name):
@@ -44,6 +45,11 @@ class Actor:
         filtered_action_distribution = self.filter_action_distribution(action_distribution, possible_actions, state[0][0])
         #Find the index corrisponding the action with the most visits. Gets the first one if multiple actions has the same visit value
         choosen_action = self.get_max_action_from_distribution(filtered_action_distribution, state[0][0])
+        
+        #print("distribution\n", action_distribution[0][0])
+        #print("filtered distribution\n", filtered_action_distribution[0][0])
+        #print("choosen action\n", choosen_action)
+        
         return choosen_action
 
     def filter_action_distribution(self, action_distribution, possible_actions, active_player):
@@ -81,12 +87,12 @@ class Actor:
             y_label = torch.from_numpy(y_train[i]).float()
             prediction = self.model(x_sample)
             loss = cross_entropy_loss(prediction, y_label)
-            loss.requires_grad = True
-            #loss = self.loss_fn(prediction, y_label)
+            #loss.requires_grad = True
+            loss = self.loss_fn(prediction, y_label)
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
-            #print(loss)
+            print(loss)
         self.trained_episodes += 1
         return loss
     def reset(self):

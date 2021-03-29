@@ -12,6 +12,10 @@ import pygame
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
+
+import torch
+
+
 # Tools 
 def read_config_from_json(filename):
     with open('configs/' + filename, 'r') as fp:
@@ -144,7 +148,7 @@ if __name__ == "__main__":
             board = simworld.Board(cfg["board_size"], "Main Game", cfg["board_visualize"], cfg["verbose"])
             mcts = mc.MTCS(board.get_state(), actor, buffer, cfg)
             x_train, y_train = buffer.get_training_dataset()
-            #buffer.flush_episode()
+            buffer.flush_episode()
             loss = actor.train(x_train, y_train)
             losses.append(loss)
             if i % 5 == 0:
@@ -167,8 +171,30 @@ if __name__ == "__main__":
     if args.tournament:
         players = []
         for actor_name in cfg["tournament_players"]:
-            filename ="actor_b"+str(board.size)+"_ep" + actor_name + ".pkl"
+            filename ="actor_b"+str(board.size)+"_ep" + str(actor_name) + ".pkl"
             actor = unpickle_file("data/actor", filename)
             players.append(actor)
+        
+        '''for i in range(len(players)):
+            for j in range(len(players)):
+                if i == j:
+                    continue
+                print("is actor ",players[i].trained_episodes, " the same as player ", players[j].trained_episodes)
+                
+                params1  = list()
+                params2 = list()
+                for param in players[i].model.parameters():
+                    #print(param)
+                    params1.append(param)
+                print("##########")
+                for param in players[j].model.parameters():
+                    #print(param)
+                    params2.append(param)
+                for k in range(len(params2)):
+                    print("¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤")
+                    print(params1[k])
+                    print(params2[k])
+
+                    print(torch.all(torch.eq(params1[k], params2[k])))'''
         tournament = tournament.Tournament(cfg, players)
         tournament.run()

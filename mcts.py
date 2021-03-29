@@ -70,7 +70,7 @@ class MTCS():
         simulation = 1
         #Cache the board. This will be the same for each simulation
         cached_simulation_board = copy.deepcopy(self.board)
-        for simulation in tqdm(range(self.number_of_simulations), " Simulation ", position = 1, leave = False):
+        for simulation in tqdm(range(self.number_of_simulations), "Simulation ", position = 1, leave = False):
             if self.verbose == 1:
                 print("### Begin simulation nr ", simulation, ", starting at root: ", self.root.state)
             pointer = self.root
@@ -110,6 +110,11 @@ class MTCS():
         #del cached_simulation_board
         #Add training case to the replay buffer
         self.replay_buffer.add_train_case((cached_simulation_board.get_state(), action_distribution))
+        if self.verbose == 2:
+            print("Simulation distribution\n", self.root.stats.values())
+            for key in self.root.stats.keys():
+                print(key)
+            print(action_distribution)
         return action_distribution
     def get_actions_distribution(self):
         #get a normalized distribution of all actions from root
