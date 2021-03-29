@@ -23,27 +23,37 @@ class Tournament():
         for i in range (len(self.players)):
             p1 = i
             for j in range(len(self.players)):
-                if i == j:
+                if i == j or (i, j) in self.played_games:
                     continue
+                self.played_games.append((i, j))
+                self.played_games.append((j, i))
                 p2 = j
                 player_1 = self.players[p1]
                 player_2 = self.players[p2]
+                flip_reward = False
                 for k in range(self.games):
                     game_nr += 1
                     print("p1 ", p1)
                     print("p2 ", p2)
                     print("Player 1: ", player_1.trained_episodes)
                     print("Player 2: ", player_2.trained_episodes)
-                    reward = self.play_game(game_nr, self.players[p1], self.players[p2])
+                    reward = self.play_game(game_nr, player_1, player_2)
+
+                    if (reward == 1 and not flip_reward) or (reward == -1 and flip_reward):
+                        self.wins[i] += 1 
+                        self.loss[j] += 1 
+                    elif (reward == -1 and not flip_reward) or (reward == 1 and flip_reward):
+                        self.wins[j] += 1 
+                        self.loss[i] += 1 
+
                     tmp = player_1
                     player_1 = player_2
                     player_2 = tmp
-                    if reward == 1:
-                        self.wins[i] += 1
-                        self.loss[j] += 1
-                    elif reward == -1:
-                        self.wins[j] += 1
-                        self.loss[i] += 1              
+                    flip_reward = not flip_reward     
+                    print("so lenge\n")
+                    print("wins ", self.wins)
+                    print("loss ", self.loss)
+                    print("###############")
         self.plot_results()
 
     def play_game(self, game_nr, p1, p2):
@@ -69,7 +79,6 @@ class Tournament():
 
         is_main_game_goal = board.is_goal_state()
         end_visualization = False
-
         while (not is_main_game_goal or self.visualize) and not end_visualization:
             if not is_main_game_goal:
                 if move > 1:
@@ -80,8 +89,10 @@ class Tournament():
                 possible_actions =  board.get_all_possible_actions()
                 state = board.get_state()
                 if board.active_player == 1:
+                    #print(p1.trained_episodes)
                     choosen_action = p1.get_action(state, possible_actions)
                 elif board.active_player == 2:
+                    #print(p2.trained_episodes)
                     choosen_action = p2.get_action(state, possible_actions)
                 board.update(choosen_action)
                 move += 1
@@ -101,6 +112,8 @@ class Tournament():
                     if event.type == pygame.QUIT :
                         pygame.quit()
                         end_visualization = True
+        print(np.reshape(board.get_state()[:,1:], (1, board.size, board.size)))
+        #print("is goal state start ", is_main_game_goal)
         reward = board.get_reward()
         #print("*****************************************************")
         print("Game finished. Reward: ", reward )

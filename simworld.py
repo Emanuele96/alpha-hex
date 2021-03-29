@@ -281,6 +281,7 @@ class Board:
             return -1
         else:
             print("ERRRORRRRRRRRRRRRRRRRRR")
+            #print(np.reshape(self.get_state()[:,1:], (1, self.size, self.size)))
             return 0        
     def populate_pawn(self,action, player_id):
         #Populate pawn with player_id dictated by action
