@@ -8,6 +8,10 @@ import random
 import operator
 from tqdm import tqdm
 
+def softmax(x):
+    e_x = np.exp(x - np.max(x)) 
+    return e_x / np.sum(e_x)
+
 class MTCS_node():
     
     def __init__(self, state, action, parent):
@@ -109,7 +113,7 @@ class MTCS():
         action_distribution = self.get_actions_distribution()
         #del cached_simulation_board
         #Add training case to the replay buffer
-        self.replay_buffer.add_train_case((cached_simulation_board.get_state(), action_distribution))
+        self.replay_buffer.add_train_case((self.root.state, action_distribution))#((cached_simulation_board.get_state(), action_distribution))
         if self.verbose == 2:
             print("Simulation distribution\n", self.root.stats.values())
             for key in self.root.stats.keys():
@@ -121,10 +125,16 @@ class MTCS():
         hashed_action = next(iter(self.root.childrens))
         action = np.expand_dims(np.asarray(hashed_action), axis=0)
         distribution = np.zeros(action.shape)
+        #print("branches\n", self.root.stats)
         for branch in self.root.stats:
             action = np.expand_dims(np.asarray(branch), axis=0)
             distribution += action * self.root.stats[branch]
-        distribution = distribution / self.root.total_visits
+        #distribution = distribution / self.root.total_visits
+        #print("distribution \n", distribution)
+        #print("distribution sum \n", np.sum(distribution))
+        #print("softmaxed \n", softmax(distribution))
+        #print("softmax sum \n", np.sum( softmax(distribution)))
+        distribution = softmax(distribution)
         return distribution
 
     def get_suggested_action(self, board = None):
