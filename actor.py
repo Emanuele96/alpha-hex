@@ -5,12 +5,20 @@ import torch.optim as optim
 import torch.nn as nn
 import torch
 import math
-def cross_entropy_loss(prediction, label):
+from tqdm import tqdm
+
+
+'''def cross_entropy_loss(prediction, label):
     loss = 0
     for i in range(len(prediction[0])):
         loss += label[0][i] * math.log(prediction[0][i])
     loss = loss * (-1)
-    return loss
+    return loss'''
+
+def cross_entropy(pred, soft_targets):
+    logsoftmax = nn.LogSoftmax(dim=0)
+    return torch.mean(torch.sum(- soft_targets * logsoftmax(pred), 1))
+
 class Actor:
 
     def __init__(self, cfg):
@@ -24,9 +32,20 @@ class Actor:
             self.input_size = cfg["board_size"] ** 2 + 1
             self.model = ann_model.Net(self.input_size,self.nn_layers, self.use_cuda)
             self.optimizer =  self.initiate_optim(cfg["anet_optim"])
-            self.loss_fn = nn.MSELoss()#reduction="mean") #nn.KLDivLoss(reduction = 'batchmean') # nn.CrossEntropyLoss()  nn.BCELoss()
+            self.loss_name = cfg["loss"]
+            self.loss_fn = self.initiate_loss() #nn.MSELoss()#reduction="mean") #nn.KLDivLoss(reduction = 'batchmean') # nn.CrossEntropyLoss()  nn.BCELoss()
             self.trained_episodes = 0
             self.minibatch_size = cfg["minibatch_size"]
+
+    def initiate_loss(self):
+        if self.loss_name == "mse":
+            return nn.MSELoss()
+        elif self.loss_name == "kld":
+            return nn.KLDivLoss(reduction = 'batchmean')
+        elif self.loss_name =="nl":
+            return nn.NLLLoss()
+        elif self.loss_name =="ce":
+            return cross_entropy()
 
 
     def initiate_optim(self, optim_name):
@@ -81,20 +100,55 @@ class Actor:
         choosen_action[0][choosen_action_index] = player_id
         return choosen_action
 
-    def train(self, x_train, y_train):
+    def train_step(self, input, label):
+        self.model.train()
+        #print("input ", input)
+        prediction = self.model(input)
+        if self.loss_name == "cross_entropy":
+                loss = cross_entropy(prediction, label)
+        else:
+                loss = self.loss_fn(prediction, label)
+        loss.backward()
+        self.optimizer.step()
+        self.optimizer.zero_grad()
+        #print("loss", loss)
+        return loss
+    
+    def episode_train(self, x_train, y_train):
+        self.optimizer.zero_grad()
+
         for i in range(len(x_train)):
             x_sample = torch.from_numpy(x_train[i]).float()
             y_label = torch.from_numpy(y_train[i]).float()
-            prediction = self.model(x_sample)
-            loss = cross_entropy_loss(prediction, y_label)
-            #loss.requires_grad = True
-            loss = self.loss_fn(prediction, y_label)
-            self.optimizer.zero_grad()
-            loss.backward()
-            self.optimizer.step()
+
+            ''' prediction = self.model(x_sample)
+            if self.loss_name == "cross_entropy":
+                loss = cross_entropy(prediction, y_label)
+                #loss.requires_grad = True
+                #loss = self.loss_fn(prediction[0], y_label[0])
+            else:
+                loss = self.loss_fn(prediction, y_label)
             print(loss)
+            loss.backward()
+            average_loss += loss
+            k += 1
+        
+            average_loss = average_loss / k
+            self.optimizer.step()'''
         self.trained_episodes += 1
-        return loss
+        return self.train_step(x_sample, y_label)
+
+    def full_train(self, train_loader, n_epochs):
+        losses = list()
+        for i in tqdm(range(n_epochs), "Training ",position = 2, leave = False):
+            for x_batch, y_batch in train_loader:
+                #send minibatch to device from cpu
+                #x_batch = x_batch.to(device)
+                #y_batch = y_batch.to(device)
+                losses.append(self.train_step(x_batch, y_batch))
+        self.trained_episodes += 1
+        return losses
+
     def reset(self):
         return -1
 
@@ -110,3 +164,13 @@ class Actor:
             self.e_greedy = max(pow(1 - decay_step, self.counter),0)
         elif variables.decay_function == "linear":
             self.e_greedy = max(self.e_greedy - ((variables.e_actor_start - variables.e_actor_stop)/ variables.episodes),0)
+
+
+a = [[0.1,0.5,0.3,.1]]
+label = [[0.1,0.1,0.5,0.3]]
+a = torch.tensor(a)
+label = torch.tensor(label)
+l = nn.MSELoss(reduction="mean")
+print(a)
+print(label)
+print(l(a, label))

@@ -11,8 +11,7 @@ from pathlib import Path
 import pygame
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-
-
+from torch.utils.data import DataLoader
 import torch
 
 
@@ -54,7 +53,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser("AlphaHex - a MCTS RL solver for HEX")
     parser.add_argument('--config', default="config.json", type=str, help="Select configuration file to load")
     parser.add_argument('--train', default=False, type=bool, help="Choose whether to train actors or not")
-    parser.add_argument('--tournament', default=True, type=bool, help="Choose whether to run a tournaments or not")
+    parser.add_argument('--tournament', default=False, type=bool, help="Choose whether to run a tournaments or not")
     parser.add_argument('--actor', default="none", type=str, help="Select actor file to load")
 
     args = parser.parse_args()
@@ -70,6 +69,8 @@ if __name__ == "__main__":
     if buffer is None:
         buffer = replay_buffer.Replay_buffer()
     mcts = mc.MTCS(board.get_state(), actor, buffer, cfg)
+
+
 
     losses = list()
     p1 = 0
@@ -147,10 +148,17 @@ if __name__ == "__main__":
             #mcts.reset()
             board = simworld.Board(cfg["board_size"], "Main Game", cfg["board_visualize"], cfg["verbose"])
             mcts = mc.MTCS(board.get_state(), actor, buffer, cfg)
-            x_train, y_train = buffer.get_training_dataset()
-            buffer.flush_episode()
-            loss = actor.train(x_train, y_train)
-            losses.append(loss)
+            if cfg["training_type"] == "episode":
+                x_train, y_train = buffer.get_training_episode()
+                buffer.flush_episode()
+                loss = actor.episode_train(x_train, y_train)
+                losses.append(loss)
+            elif cfg["training_type"] == "full_minibatch":
+                buffer.flush_episode()
+                train_data = buffer.get_training_dataset()
+                train_loader = DataLoader(dataset=train_data, batch_size=cfg["minibatch_size"], shuffle=True)
+                losses.extend(actor.full_train(train_loader, cfg["n_epochs"]))
+            
             if i % 5 == 0:
                 pickle_file("data/dataset", "buffer_b" + str(board.size) + ".pkl", buffer)
             
