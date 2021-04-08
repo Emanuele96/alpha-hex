@@ -129,12 +129,14 @@ class MTCS():
         for branch in self.root.stats:
             action = np.expand_dims(np.asarray(branch), axis=0)
             distribution += action * self.root.stats[branch]
-        #distribution = distribution / self.root.total_visits
+        distribution = distribution / self.root.total_visits
         #print("distribution \n", distribution)
         #print("distribution sum \n", np.sum(distribution))
         #print("softmaxed \n", softmax(distribution))
         #print("softmax sum \n", np.sum( softmax(distribution)))
-        distribution = softmax(distribution)
+        #print("before norm ", softmax(distribution))
+        #print("after norm ", softmax(distribution / self.root.total_visits))
+        #distribution = softmax(distribution)
         return distribution
 
     def get_suggested_action(self, board = None):

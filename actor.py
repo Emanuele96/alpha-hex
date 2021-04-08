@@ -15,8 +15,9 @@ from tqdm import tqdm
     loss = loss * (-1)
     return loss'''
 
-def cross_entropy(pred, soft_targets):
-    logsoftmax = nn.LogSoftmax(dim=0)
+def cross_entropy(pred, soft_targets, dim):
+    print("dim###################################### ", dim)
+    logsoftmax = nn.LogSoftmax(dim=dim)
     return torch.mean(torch.sum(- soft_targets * logsoftmax(pred), 1))
 
 class Actor:
@@ -37,9 +38,16 @@ class Actor:
             self.trained_episodes = 0
             self.minibatch_size = cfg["minibatch_size"]
 
+            if cfg["training_type"] == "full_minibatch":
+                self.dim = 2
+            elif cfg["training_type"] == "episode":
+                self.dim = 1
+
+            self.softmax = nn.Softmax(dim=self.dim)
+
     def initiate_loss(self):
         if self.loss_name == "mse":
-            return nn.MSELoss()
+            return nn.MSELoss(reduction="mean")
         elif self.loss_name == "kld":
             return nn.KLDivLoss(reduction = 'batchmean')
         elif self.loss_name =="nl":
@@ -100,41 +108,34 @@ class Actor:
         choosen_action[0][choosen_action_index] = player_id
         return choosen_action
 
-    def train_step(self, input, label):
+    def train_step(self, input_data, label):
         self.model.train()
+        prediction = self.model(input_data)
+        
+        
         #print("input ", input)
-        prediction = self.model(input)
+        #print("prediction ", self.softmax(prediction))
+        #print("label ", label)
+        
+        
         if self.loss_name == "cross_entropy":
-                loss = cross_entropy(prediction, label)
+                loss = cross_entropy(prediction, label, self.dim)
         else:
                 loss = self.loss_fn(prediction, label)
+        print("loss ", loss)
         loss.backward()
         self.optimizer.step()
         self.optimizer.zero_grad()
         #print("loss", loss)
+        self.model.train(mode=False)
         return loss
     
     def episode_train(self, x_train, y_train):
         self.optimizer.zero_grad()
-
         for i in range(len(x_train)):
             x_sample = torch.from_numpy(x_train[i]).float()
             y_label = torch.from_numpy(y_train[i]).float()
-
-            ''' prediction = self.model(x_sample)
-            if self.loss_name == "cross_entropy":
-                loss = cross_entropy(prediction, y_label)
-                #loss.requires_grad = True
-                #loss = self.loss_fn(prediction[0], y_label[0])
-            else:
-                loss = self.loss_fn(prediction, y_label)
-            print(loss)
-            loss.backward()
-            average_loss += loss
-            k += 1
-        
-            average_loss = average_loss / k
-            self.optimizer.step()'''
+            self.train_step(x_sample, y_label)
         self.trained_episodes += 1
         return self.train_step(x_sample, y_label)
 

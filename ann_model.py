@@ -24,6 +24,7 @@ class Net(nn.Module):
             x = self.activate_input(self.layers[i](x), self.layers_specs[i]["activation"])
         #x = F.softmax(x, dim=1)
         #x = self.activation_output(x)
+        #print("x ", x)
         return x
 
     def activate_input(self, x, activation_name):
