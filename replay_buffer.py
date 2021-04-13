@@ -32,7 +32,7 @@ class Replay_buffer():
 
         x_train_tensor = torch.from_numpy(x_train).float()
         y_train_tensor = torch.from_numpy(y_train).float()
-
+        #print(x_train_tensor[0], y_train_tensor[0])
         return CustomDataset(x_train_tensor, y_train_tensor)
         
 

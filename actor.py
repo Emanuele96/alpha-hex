@@ -42,8 +42,8 @@ class Actor:
                 self.dim = 2
             elif cfg["training_type"] == "episode":
                 self.dim = 1
-
             self.softmax = nn.Softmax(dim=self.dim)
+            self.cfg = cfg
 
     def initiate_loss(self):
         if self.loss_name == "mse":
@@ -68,6 +68,7 @@ class Actor:
         #Forward the state in the model and get a action distribution
         state_tensor = torch.from_numpy(state)
         action_distribution = self.model(state_tensor.float()).detach().numpy()
+        #print("ac distr mod", action_distribution)
         #Filter away the illegal actions and normalize
         filtered_action_distribution = self.filter_action_distribution(action_distribution, possible_actions, state[0][0])
         #Find the index corrisponding the action with the most visits. Gets the first one if multiple actions has the same visit value
@@ -122,7 +123,7 @@ class Actor:
                 loss = cross_entropy(prediction, label, self.dim)
         else:
                 loss = self.loss_fn(prediction, label)
-        print("loss ", loss)
+        #print("loss ", loss)
         loss.backward()
         self.optimizer.step()
         self.optimizer.zero_grad()
@@ -167,11 +168,11 @@ class Actor:
             self.e_greedy = max(self.e_greedy - ((variables.e_actor_start - variables.e_actor_stop)/ variables.episodes),0)
 
 
-a = [[0.1,0.5,0.3,.1]]
+'''a = [[0.1,0.5,0.3,.1]]
 label = [[0.1,0.1,0.5,0.3]]
 a = torch.tensor(a)
 label = torch.tensor(label)
 l = nn.MSELoss(reduction="mean")
 print(a)
 print(label)
-print(l(a, label))
+print(l(a, label))'''

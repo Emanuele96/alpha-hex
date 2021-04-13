@@ -53,6 +53,7 @@ class BasicClientActor(BasicClientActorAbs):
         next_move = (row, column)
         #print("reshaped action ", next_action)
         #print("result ", next_move)
+        print("I'm player ", state[0])
         ##############################
         return next_move
 
@@ -182,7 +183,7 @@ def unpickle_file(path, filename):
 
 if __name__ == '__main__':
 
-    p_name = "actor_b6_ep589"
+    p_name = "actor_b6_ep990"
     player = unpickle_file("data/actor", p_name + ".pkl" )
     bsa = BasicClientActor(player, verbose=True)
     bsa.connect_to_server()
