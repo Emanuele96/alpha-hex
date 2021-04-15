@@ -12,6 +12,7 @@
     "buffer_type": "list",
     "training_type" : "full_minibatch",
     "random_adversary_training": true,
+    "random_adversary_probability":0.5,
     "minibatch_size": 16,
     "n_epochs":1,
     "anet_layers": [
@@ -29,9 +30,9 @@
     "loss":"l1",
     "anet_optim" : "adam",
     "number_of_simulations": 200,
-    "number_tournament_games": 2,
+    "number_tournament_games": 50,
     "actors_to_save":10,
-    "tournament_few_players": false,
-    "tournament_players":[0,3,6,9],
+    "tournament_few_players": true,
+    "tournament_players":[0,66,99,162,227,238],
     "use_cuda":false
 }

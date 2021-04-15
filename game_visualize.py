@@ -78,7 +78,7 @@ if __name__ == "__main__":
     print(all_agents)
     #Set up players
     p1 = actor
-    if cfg["random_adversary_training"] and random.random() < 0.5:
+    if cfg["random_adversary_training"] and random.random() < cfg["random_adversary_probability"]:
         p2 = random.choice(all_agents)
     else:
         p2 = actor
@@ -154,7 +154,7 @@ if __name__ == "__main__":
 
             # Start new board and new players
             board = simworld.Board(cfg["board_size"], "Main Game", cfg["board_visualize"], cfg["verbose"])
-            if cfg["random_adversary_training"] and random.random()<0.5:
+            if cfg["random_adversary_training"] and random.random() < cfg["random_adversary_probability"]:
                 p2 = random.choice(all_agents)
             #Alternate episode, change p1 or p2 starting
             if i % 2 == 0:
