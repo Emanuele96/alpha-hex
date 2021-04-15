@@ -48,11 +48,11 @@ class MTCS_node():
 
 class MTCS():
 
-    def __init__(self, init_state, actor, replay_buffer,  cfg):
-        self.actor = actor
+    def __init__(self, init_state, player_1, player_2, replay_buffer,  cfg):
+        self.player_1 = player_1
+        self.player_2 = player_2
         self.init_state = init_state
         self.root = self.import_state(init_state)
-        self.epsilon = cfg["epsilon"]
         self.number_of_simulations = cfg["number_of_simulations"]
         self.visualize = cfg["rollout_visualize"]
         self.board = simworld.Board(cfg["board_size"],"Rollout", self.visualize, cfg["verbose"])
@@ -143,8 +143,13 @@ class MTCS():
         #Use actor policy to select the next action
         if board is None:
             board = self.board
+        active_player = board.state_t[0][0]
+        if active_player == 1:
+            actor = self.player_1
+        elif active_player == 2:
+            actor = self.player_2
         possible_actions = board.get_all_possible_actions()
-        return self.actor.get_action(board.get_state(), possible_actions)
+        return actor.get_action(board.get_state(), possible_actions)
 
     def is_goal_state(self, state):
         return self.board.is_goal_state()

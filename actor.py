@@ -54,6 +54,8 @@ class Actor:
             return nn.NLLLoss()
         elif self.loss_name =="ce":
             return cross_entropy()
+        elif self.loss_name =="l1":
+            return nn.L1Loss()
 
 
     def initiate_optim(self, optim_name):
@@ -114,16 +116,16 @@ class Actor:
         prediction = self.model(input_data)
         
         
-        #print("input ", input)
-        #print("prediction ", self.softmax(prediction))
-        #print("label ", label)
+        print("input ", input_data[0])
+        print("prediction ", prediction[0])
+        print("label ", label[0])
         
         
         if self.loss_name == "cross_entropy":
                 loss = cross_entropy(prediction, label, self.dim)
         else:
                 loss = self.loss_fn(prediction, label)
-        #print("loss ", loss)
+        print("loss ", loss)
         loss.backward()
         self.optimizer.step()
         self.optimizer.zero_grad()
@@ -142,37 +144,14 @@ class Actor:
 
     def full_train(self, train_loader, n_epochs):
         losses = list()
-        for i in tqdm(range(n_epochs), "Training ",position = 2, leave = False):
-            for x_batch, y_batch in train_loader:
-                #send minibatch to device from cpu
-                #x_batch = x_batch.to(device)
-                #y_batch = y_batch.to(device)
-                losses.append(self.train_step(x_batch, y_batch))
+        #for i in tqdm(range(n_epochs), "Training ",position = 2, leave = False):
+        for x_batch, y_batch in train_loader:
+            #send minibatch to device from cpu
+            #x_batch = x_batch.to(device)
+            #y_batch = y_batch.to(device)
+            losses.append(self.train_step(x_batch, y_batch))
+            #break after 1 minibatch
+            break
+
         self.trained_episodes += 1
         return losses
-
-    def reset(self):
-        return -1
-
-    def e_decay(self):
-        #Decay the e sigma factor for the e greedy strategy.
-        if self.counter >= variables.episodes - variables.episodes * variables.total_greedy_percent:
-            self.e_greedy = 0
-        elif variables.decay_function == "decay":
-            self.e_greedy = max(self.e_greedy* variables.e_decay,0)    
-        elif variables.decay_function == "variable_decay":
-            n_steps = variables.episodes
-            decay_step = 5/n_steps
-            self.e_greedy = max(pow(1 - decay_step, self.counter),0)
-        elif variables.decay_function == "linear":
-            self.e_greedy = max(self.e_greedy - ((variables.e_actor_start - variables.e_actor_stop)/ variables.episodes),0)
-
-
-'''a = [[0.1,0.5,0.3,.1]]
-label = [[0.1,0.1,0.5,0.3]]
-a = torch.tensor(a)
-label = torch.tensor(label)
-l = nn.MSELoss(reduction="mean")
-print(a)
-print(label)
-print(l(a, label))'''

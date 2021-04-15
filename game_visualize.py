@@ -13,7 +13,8 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 import torch
-
+import random
+import copy
 
 # Tools 
 def read_config_from_json(filename):
@@ -67,25 +68,38 @@ if __name__ == "__main__":
         actor = unpickle_file("data/actor", args.actor + ".pkl" )
     buffer = unpickle_file("data/dataset", "buffer_b" + str(board.size) + ".pkl" )
     if buffer is None:
-        buffer = replay_buffer.Replay_buffer()
-    mcts = mc.MTCS(board.get_state(), actor, buffer, cfg)
+        buffer = replay_buffer.Replay_buffer(cfg["buffer_type"])
 
+    all_agents = unpickle_file("data/actor", "all_agents_b" + str(board.size) + ".pkl" )
+    if all_agents is None:
+        all_agents = list()
+        all_agents.append(copy.deepcopy(actor))
 
+    print(all_agents)
+    #Set up players
+    p1 = actor
+    if cfg["random_adversary_training"] and random.random() < 0.5:
+        p2 = random.choice(all_agents)
+    else:
+        p2 = actor
+
+    mcts = mc.MTCS(board.get_state(), p1, p2, buffer, cfg)
+    if len(all_agents) == 1:
+        all_agents.pop()
 
     losses = list()
-    p1 = 0
-    p2 = 0
+    p1_wins = 0
+    p2_wins = 0
     if args.train:
         for i in tqdm(range(cfg["episodes"]+1), "Episode ", position = 0):
             if i % (cfg["episodes"] / cfg["actors_to_save"]+1)== 0:
                 filename = "actor_b" + str(board.size) + "_ep" + str(actor.trained_episodes) +".pkl"  
-                pickle_file("data/actor", filename, actor)
+                copied_actor = copy.deepcopy(actor)
+                pickle_file("data/actor", filename, copied_actor)
+                all_agents.append(copied_actor)
+                pickle_file("data/actor", "all_agents_b" + str(board.size) + ".pkl", all_agents)
             move = 1
 
-
-            #print("*****************************************************")
-            #print("Move nr. ", move, " - Player ", int(board.active_player))
-            #print("Before\n", board.get_state()[0,1:].reshape(1, cfg["board_size"], cfg["board_size"]))
             
             if  cfg["board_visualize"]:
                 pygame.init()
@@ -106,20 +120,15 @@ if __name__ == "__main__":
                     if move > 1:
                         board.change_player()
                         mcts.prune_tree(choosen_action)
-                        #print("*****************************************************")
-                        #print("Move nr. ", move, " - Player ", int(board.active_player))
-                        #print("Before\n", board.get_state()[0,1:].reshape(1, cfg["board_size"], cfg["board_size"]))
+
                     action_distribution = mcts.run_simulation()
-                    #print("ACTion distrisbution", action_distribution)
-                    #hashed_action = max(action_distribution, key= action_distribution.get)
-                    #choosen_action = np.expand_dims(np.asarray(hashed_action), axis=0)
+
                     choosen_action = actor.get_max_action_from_distribution(action_distribution, board.active_player)
                     
                     new_pil_frame = board.update(choosen_action)
                     move += 1
-                    #print("After\n", board.get_state()[0,1:].reshape(1, cfg["board_size"], cfg["board_size"]))
                     is_main_game_goal = board.is_goal_state()
-                    new_pil_frame = board.update(None) #board.show_board()
+                    new_pil_frame = board.update(None)
 
                 if cfg["board_visualize"]:
                     #Performe the routine for visualization
@@ -137,17 +146,21 @@ if __name__ == "__main__":
                 
                 
             reward = board.get_reward()
-            #print("*****************************************************")
-            #print("Episode ", i, " Finished. Reward: ", reward )
-            if reward == 1:
-                p1 += 1
-            elif reward == -1:
-                p2 += 1
 
-            #board.reset(False)
-            #mcts.reset()
+            if reward == 1:
+                p1_wins += 1
+            elif reward == -1:
+                p2_wins += 1
+
+            # Start new board and new players
             board = simworld.Board(cfg["board_size"], "Main Game", cfg["board_visualize"], cfg["verbose"])
-            mcts = mc.MTCS(board.get_state(), actor, buffer, cfg)
+            if cfg["random_adversary_training"] and random.random()<0.5:
+                p2 = random.choice(all_agents)
+            #Alternate episode, change p1 or p2 starting
+            if i % 2 == 0:
+               board.change_player()
+                
+            mcts = mc.MTCS(board.get_state(), p1, p2, buffer, cfg)
             if cfg["training_type"] == "episode":
                 x_train, y_train = buffer.get_training_episode()
                 buffer.flush_episode()
@@ -162,12 +175,9 @@ if __name__ == "__main__":
             if i % 5 == 0:
                 pickle_file("data/dataset", "buffer_b" + str(board.size) + ".pkl", buffer)
             
-            #Alternate episode, change p1 or p2 starting
-            if i % 2 == 0:
-               board.change_player() 
 
         print("All episodes run. The stats are:")
-        print("P1 won : ", p1, " P2 won : ", p2)
+        print("Actor won : ", p1_wins, " Contester won : ", p2_wins)
         print("Saving Replay Buffer to disc....")
         pickle_file("data/dataset", "buffer_b" + str(board.size) + ".pkl", buffer)
         print("Replay Buffer saved.")
@@ -177,32 +187,14 @@ if __name__ == "__main__":
         plt.show()
 
     if args.tournament:
-        players = []
-        for actor_name in cfg["tournament_players"]:
-            filename ="actor_b"+str(board.size)+"_ep" + str(actor_name) + ".pkl"
-            actor = unpickle_file("data/actor", filename)
-            players.append(actor)
-        
-        '''for i in range(len(players)):
-            for j in range(len(players)):
-                if i == j:
-                    continue
-                print("is actor ",players[i].trained_episodes, " the same as player ", players[j].trained_episodes)
-                
-                params1  = list()
-                params2 = list()
-                for param in players[i].model.parameters():
-                    #print(param)
-                    params1.append(param)
-                print("##########")
-                for param in players[j].model.parameters():
-                    #print(param)
-                    params2.append(param)
-                for k in range(len(params2)):
-                    print("¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤")
-                    print(params1[k])
-                    print(params2[k])
+        if cfg["tournament_few_players"]:
+            all_agents = []
+            for actor_name in cfg["tournament_players"]:
+                filename ="actor_b"+str(board.size)+"_ep" + str(actor_name) + ".pkl"
+                actor = unpickle_file("data/actor", filename)
+                all_agents.append(actor)
+        else:
+            all_agents = unpickle_file("data/actor", "all_agents_b" + str(board.size) + ".pkl" )
 
-                    print(torch.all(torch.eq(params1[k], params2[k])))'''
-        tournament = tournament.Tournament(cfg, players)
+        tournament = tournament.Tournament(cfg, all_agents)
         tournament.run()
