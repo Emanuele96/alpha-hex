@@ -20,6 +20,7 @@ class Net(nn.Module):
         self.softmax_1 = nn.Softmax(dim=1)
         self.softmax_2 = nn.Softmax(dim=2)
 
+    
     def forward(self, x):
         for i in range(len(self.layers)):
             x = self.activate_input(self.layers[i](x), self.layers_specs[i]["activation"])

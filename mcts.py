@@ -68,10 +68,10 @@ class MTCS():
         self.frame_latency = cfg["frame_latency_rollout"]
         self.board_size = cfg["board_size"]
         self.count = 0
-        self.expand_prob = 0.6
+        self.expand_prob = 0.7
         self.expand_children_prob = 0.7
-        self.rollout_random_prob = 0.3
-        self.usa_c = 1.2
+        self.rollout_random_prob = 0.1
+        self.usa_c = 1
         self.print_tree = False
 
     def initialize_board(self):
@@ -186,18 +186,18 @@ class MTCS():
             if self.root.state[0][0] == 2:
                 action = action / 2
             distribution += action * self.root.stats[branch]
-        print("root  ", self.root.state[0])
-        print("distribution \n", distribution[0])
-        print("sum distribution \n", np.sum(distribution[0]))
+        #print("root  ", self.root.state[0])
+        #print("distribution \n", distribution[0])
+        #print("sum distribution \n", np.sum(distribution[0]))
         distribution = distribution / self.root.total_visits
-        print("sum distribution \n", np.sum(distribution[0]))
+        #print("sum distribution \n", np.sum(distribution[0]))
 
         #print("distribution sum \n", np.sum(distribution))
         #print("softmaxed \n", softmax(distribution))
         #print("softmax sum \n", np.sum( softmax(distribution)))
         #print("before norm ", softmax(distribution))
         #print("after norm ", softmax(distribution / self.root.total_visits))
-        distribution = softmax(distribution)
+        #distribution = softmax(distribution)
         return distribution
 
     def get_suggested_action(self, board = None):
@@ -380,7 +380,7 @@ class MTCS():
     def calculate_usa(self, node, action):
         if node.stats[action] == 0:
             return math.inf
-        return self.usa_c * math.sqrt((2*math.log(node.total_visits)/(node.stats[action])))
+        return self.usa_c * math.sqrt((math.log(node.total_visits)/(node.stats[action])))
 
     def import_state(self, state):
         #Take the state of the board and return a MCTS root node
@@ -400,7 +400,7 @@ class MTCS():
         self.count +=1
 
     def plot_tree(self):
-        name = str(self.root.state[0]) + "\nN = " + str(self.root.total_visits) 
+        name = str(self.root.state[0][0]) + "\nN = " + str(self.root.total_visits) 
         root = Node(name = name, parent=None)
         self.update_children(mcts_node=self.root, parent=root)
         filename = "data/mcts/b" + str(self.board_size) + "_mcts_" + str(self.count) + ".png"
@@ -410,6 +410,6 @@ class MTCS():
     def update_children(self,mcts_node, parent):
         #print(parent)
         for children in mcts_node.childrens.values():
-            name = str(children.state[0]) + "\nN = " + str(mcts_node.stats[children.action]) + "/" + str(children.total_visits) + "\n E = " +  str(mcts_node.total_value[children.action]) + "\n Q = " +  str(round(mcts_node.q_values[children.action],2))
+            name = str(children.state[0][0]) + "\nN = " + str(mcts_node.stats[children.action]) + "/" + str(children.total_visits) + "\n E = " +  str(mcts_node.total_value[children.action]) + "\n Q = " +  str(round(mcts_node.q_values[children.action],2))
             node = Node(name = name , parent= parent)
             self.update_children(mcts_node = children, parent = node)

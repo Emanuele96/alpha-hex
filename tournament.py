@@ -22,6 +22,7 @@ class Tournament():
         game_nr =0
         for i in range (len(self.players)):
             p1 = i
+            toogle = False
             for j in range(len(self.players)):
                 if i == j or (i, j) in self.played_games:
                     continue
@@ -37,28 +38,33 @@ class Tournament():
                     print("p2 ", p2)
                     print("Player 1: ", player_1.trained_episodes)
                     print("Player 2: ", player_2.trained_episodes)
-                    reward = self.play_game(game_nr, player_1, player_2)
-
+                    reward = self.play_game(game_nr, player_1, player_2, toogle)
+                    toogle = not toogle
                     if (reward == 1 and not flip_reward) or (reward == -1 and flip_reward):
                         self.wins[i] += 1 
                         self.loss[j] += 1 
                     elif (reward == -1 and not flip_reward) or (reward == 1 and flip_reward):
                         self.wins[j] += 1 
                         self.loss[i] += 1 
-
-                    tmp = player_1
-                    player_1 = player_2
-                    player_2 = tmp
-                    flip_reward = not flip_reward     
+                    print("game nr ", k)
+                    if k == 1:
+                        tmp = player_1
+                        player_1 = player_2
+                        player_2 = tmp
+                        flip_reward = not flip_reward     
                     print("so lenge\n")
                     print("wins ", self.wins)
                     print("loss ", self.loss)
                     print("###############")
         self.plot_results()
 
-    def play_game(self, game_nr, p1, p2):
+    def play_game(self, game_nr, p1, p2, toogle):
+
         board = simworld.Board(self.board_size,"Tournament", self.visualize, False)
+        if toogle:
+            board.change_player()
         move = 1
+        print("toogle: ", toogle, "  P", board.active_player)
         print("******************** , Game ", str(game_nr), " ********************")
         #print("Move nr. ", move, " - Player ", int(board.active_player))
         #print("Before\n", board.get_state()[0,1:].reshape(1, self.board_size, self.board_size))

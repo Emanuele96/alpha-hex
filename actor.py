@@ -143,12 +143,12 @@ class Actor:
         
 
         
-        '''print("input ", input_data[0])
+        print("input ", input_data[0])
         print("prediction ", prediction[0])
         print("label ", label[0])
         print("input size ", input_data.size())
         print("prediction size ", prediction.size())
-        '''
+        
         #prediction = self.softmax(prediction)
         #print("softmaxa prediction ", prediction[0] )
         #print("softmaxa prediction ", torch.sum(prediction[0]) )
@@ -158,7 +158,7 @@ class Actor:
                 loss = cross_entropy(prediction, label, self.dim)
         else:
                 loss = self.loss_fn(prediction, label)
-        #print("loss ", loss)
+        print("loss ", loss)
         loss.backward()
         self.optimizer.step()
         self.optimizer.zero_grad()
