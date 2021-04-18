@@ -183,7 +183,7 @@ def unpickle_file(path, filename):
 
 if __name__ == '__main__':
 
-    p_name = "actor_b6_ep870"
+    p_name = "actor_b6_ep99"
     player = unpickle_file("data/actor", p_name + ".pkl" )
     bsa = BasicClientActor(player, verbose=True)
     bsa.connect_to_server()

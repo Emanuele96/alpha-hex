@@ -15,6 +15,7 @@ from torch.utils.data import DataLoader
 import torch
 import random
 import copy
+import math
 
 # Tools 
 def read_config_from_json(filename):
@@ -78,21 +79,21 @@ if __name__ == "__main__":
     print(all_agents)
     #Set up players
     p1 = actor
-    if cfg["random_adversary_training"] and random.random() < 0.5:
-        p2 = random.choice(all_agents)
+    if cfg["random_adversary_training"] and random.random() < cfg["random_adversary_probability"]:
+        p2 = random.choice(all_agents[math.floor(cfg["only_last_adversary"]*len(all_agents)):])
     else:
         p2 = actor
+    print("\n", p1.trained_episodes, " playing against ", p2.trained_episodes)
 
     mcts = mc.MTCS(board.get_state(), p1, p2, buffer, cfg)
-    if len(all_agents) == 1:
-        all_agents.pop()
+
 
     losses = list()
     p1_wins = 0
     p2_wins = 0
     if args.train:
         for i in tqdm(range(cfg["episodes"]+1), "Episode ", position = 0):
-            if i % (cfg["episodes"] / cfg["actors_to_save"]+1)== 0:
+            if i % (cfg["episodes"] / cfg["actors_to_save"]+1)== 0 and i!=0:
                 filename = "actor_b" + str(board.size) + "_ep" + str(actor.trained_episodes) +".pkl"  
                 copied_actor = copy.deepcopy(actor)
                 pickle_file("data/actor", filename, copied_actor)
@@ -154,10 +155,14 @@ if __name__ == "__main__":
 
             # Start new board and new players
             board = simworld.Board(cfg["board_size"], "Main Game", cfg["board_visualize"], cfg["verbose"])
-            if cfg["random_adversary_training"] and random.random()<0.5:
-                p2 = random.choice(all_agents)
+            if cfg["random_adversary_training"] and random.random() < cfg["random_adversary_probability"]:
+                p2 = random.choice(all_agents[math.floor(cfg["only_last_adversary"]*len(all_agents)):])
+            else:
+                p2 = actor
+            print("\n", p1.trained_episodes, " playing against ", p2.trained_episodes)
+
             #Alternate episode, change p1 or p2 starting
-            if i % 2 == 0:
+            if random.random() < 0.5: #i % 2 == 0:
                board.change_player()
                 
             mcts = mc.MTCS(board.get_state(), p1, p2, buffer, cfg)
@@ -172,9 +177,12 @@ if __name__ == "__main__":
                 train_loader = DataLoader(dataset=train_data, batch_size=cfg["minibatch_size"], shuffle=True)
                 losses.extend(actor.full_train(train_loader, cfg["n_epochs"]))
             
+            if i % math.floor(cfg["clear_buffer_after_episode"] * cfg["episodes"]) == 0:
+                buffer.clear(cfg["clear_buffer_amount"])
+
             if i % 5 == 0:
                 pickle_file("data/dataset", "buffer_b" + str(board.size) + ".pkl", buffer)
-            
+            print("buffer size: ", len(buffer.long_time_dataset))
 
         print("All episodes run. The stats are:")
         print("Actor won : ", p1_wins, " Contester won : ", p2_wins)

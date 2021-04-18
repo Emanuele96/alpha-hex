@@ -1,6 +1,8 @@
 import numpy as np
 from torch.utils.data import Dataset, TensorDataset
 import torch
+import math
+
 class Replay_buffer():
     def __init__(self, type_bfr):
         self.type = type_bfr
@@ -58,9 +60,11 @@ class Replay_buffer():
             self.long_time_dataset.update(self.dataset)
             self.dataset = dict()
 
-    def clear(self):
+    def clear(self, quantity):
         if self.type == "list":
-            self.long_time_dataset = list()
+            for i in range(math.floor(quantity*len(self.long_time_dataset))):
+                self.long_time_dataset.pop(0)
+            #self.long_time_dataset = list()
         elif self.type == "dict":
             self.long_time_dataset = dict()
         

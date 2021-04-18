@@ -17,14 +17,20 @@ class Net(nn.Module):
             current_dim = layer["neurons"]
         if cuda: 
             self.cuda()
-        self.softmax = nn.Softmax(dim=1)
+        self.softmax_1 = nn.Softmax(dim=1)
+        self.softmax_2 = nn.Softmax(dim=2)
 
     def forward(self, x):
         for i in range(len(self.layers)):
             x = self.activate_input(self.layers[i](x), self.layers_specs[i]["activation"])
-        #x = F.softmax(x, dim=1)
-        #x = self.activation_output(x)
-        #print("x ", x)
+
+        #print("summen skal vaere 1 ", torch.sum(x))
+        if len(list(x.size())) == 2:
+            x = self.softmax_1(x)
+        elif len(list(x.size())) == 3:
+            x = self.softmax_2(x)
+
+
         return x
 
     def activate_input(self, x, activation_name):
@@ -42,4 +48,4 @@ class Net(nn.Module):
             #print("output ", x)
             #print("activated ",  self.softmax(x))
             #print("sum", torch.sum(self.softmax(x)))
-            return self.softmax(x)
+            return self.softmax_1(x)
