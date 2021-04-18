@@ -68,9 +68,11 @@ class MTCS():
         self.frame_latency = cfg["frame_latency_rollout"]
         self.board_size = cfg["board_size"]
         self.count = 0
-        self.expand_prob = 1
-        self.rollout_random_prob = 0.5
-        self.usa_c = 2
+        self.expand_prob = 0.6
+        self.expand_children_prob = 0.7
+        self.rollout_random_prob = 0.3
+        self.usa_c = 1.2
+        self.print_tree = False
 
     def initialize_board(self):
         self.board.set_state(self.init_state, True)
@@ -92,13 +94,13 @@ class MTCS():
             self.board.set_state(self.root.state, True)
             #Check wether pointer points to a leaf node
             #While the node is not a leaf node, point to the next one using the active player and tree policy
-            print("¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤")
+            #print("¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤")
             while not pointer.is_leaf:
-                print("pointer ", pointer.state)
+                #print("pointer ", pointer.state)
                 if self.verbose == 1:
                     print("Not leaf node, select next node with tree policy")
                 pointer = self.choose_next_node(pointer)
-                print("leaf pointer ", pointer.state)
+                #print("leaf pointer ", pointer.state)
 
             self.board.set_state(pointer.state, True)
             #If the node has been sampled before or it is the root, expand it, select the first of the childrens and run a rollout and backpropagation
@@ -152,7 +154,8 @@ class MTCS():
             for key in self.root.stats.keys():
                 print(key)
             print(action_distribution)
-        self.plot_tree()
+        if self.print_tree:
+            self.plot_tree()
         return action_distribution
 
     def flip_array(self, array):
@@ -300,7 +303,7 @@ class MTCS():
                 print("##### Expanding Node ", node)
             possible_actions = self.board.get_all_possible_actions(node.state)
             for action in possible_actions:
-                if random.random() < 2:
+                if random.random() < self.expand_children_prob:
                     #Action is a np array and as list are unhashable. A key for a dict must be hashable, so convert to bytes (action.tobytes()) or tuple(action))
                     hashable_action = tuple(action[0])
                     tmp_state = self.board.get_next_state(action=action, state_t=node.state, change_player=True)
@@ -310,7 +313,8 @@ class MTCS():
                     node.stats[hashable_action] = 0
                     node.total_value[hashable_action] = 0
             #print("expanded ", len(node.childrens), " children")
-            node.is_leaf = False
+            if len(node.childrens)>0:
+                node.is_leaf = False
     
     def choose_next_node(self, node):
         #Calculate usa values and do the best greedy choice relate to the player playing
@@ -319,18 +323,18 @@ class MTCS():
             print("From ", node.state)
         tmp = dict()
         if node.state[0][0] == 1:
-            print("#########################")
+            '''print("#########################")
             print("active player", self.board.active_player)
             print("board state ", self.board.get_state())
-            print("mcts parent state \n", node.state)
+            print("mcts parent state \n", node.state)'''
             for action in node.q_values:
                 tmp[action] = node.q_values[action] + self.calculate_usa(node, action) 
-                print("\n",action)
+                '''print("\n",action)
                 print( ": usa : ", self.calculate_usa(node, action))
                 print( " qval : ", node.q_values[action])
                 print( " tot : ",  node.q_values[action] + self.calculate_usa(node, action))
                 print("\n")
-            print("#########################")
+            print("#########################")'''
 
             #choosen_action = max(tmp, key= tmp.get)
             max_val = max(tmp.items(), key=operator.itemgetter(1))
@@ -339,21 +343,21 @@ class MTCS():
             #print("max_val", max_val)
             #print("max_keys", max_keys)
             #print("tmp", tmp.values())
-            print("random choice", choosen_action)
+            #print("random choice", choosen_action)
         elif node.state[0][0] == 2:
 
-            print("#########################")
+            '''print("#########################")
             print("active player", self.board.active_player)
             print("board state ", self.board.get_state())
-            print("mcts parent state \n", node.state)
+            print("mcts parent state \n", node.state)'''
             for action in node.q_values:
                 tmp[action] = node.q_values[action] - self.calculate_usa(node, action) 
-                print("\n",action)
+                '''print("\n",action)
                 print( ": usa : ", self.calculate_usa(node, action))
                 print( " qval : ", node.q_values[action])
                 print( " tot : ",  node.q_values[action] - self.calculate_usa(node, action))
                 print("\n")
-            print("#########################")
+            print("#########################")'''
 
 
             for action in node.q_values:
@@ -376,7 +380,7 @@ class MTCS():
     def calculate_usa(self, node, action):
         if node.stats[action] == 0:
             return math.inf
-        return self.usa_c * math.sqrt((math.log(node.total_visits)/(1 + node.stats[action])))
+        return self.usa_c * math.sqrt((2*math.log(node.total_visits)/(node.stats[action])))
 
     def import_state(self, state):
         #Take the state of the board and return a MCTS root node
