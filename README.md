@@ -11,12 +11,7 @@ After the MCTS simulation has been completed, a distribution of visits from the 
 After a game/episode is completed, the learner retrieves a batch from the buffer and performes batch learning to improve his policy. The first elements of the buffer will removed with time.
 
 ### Models
-If not specified, the program will create or load a "convpool" model. In the user guide is shown how to customize the runtime of the program with parameters.
-Some pre-trained models can be loaded in the program for evaluation purposes. Due to the high size, you can download it [from this link](https://drive.google.com/drive/folders/1gg7o8Hry2iGaw366ISvkLrzHmiLmEqbw?usp=sharing) and place it in the project root. More instructions follows the download.
-
-### Dataset
-Dataset is composed of 4242 pictures of flowers divided in 5 categories: Sunflower, Rose, Dendelion, Daisy and Tulip.
-Source of the dataset : https://www.kaggle.com/rishitchs/final-flowers-course-project-dataset
+Some pretrained model that gave good results can be found under the "models" folder. 
 
 ## Installation Guide
 The project is developed used Python version 3.7, but newer version should be compatible too. Compatibility with Python 2.7 is not assured.
