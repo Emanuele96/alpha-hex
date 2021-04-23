@@ -99,3 +99,12 @@ config.json
 ### Pictures
 ![MCTS1](https://github.com/Emanuele96/alpha-hex/blob/main/images/b2_mcts_0.png)
 MCTS with a board of 2x2 for simplicity. First step
+
+![MCTS2](https://github.com/Emanuele96/alpha-hex/blob/main/images/b2_mcts_1.png)
+MCTS with a board of 2x2 for simplicity. Second step
+
+![MCTS3](https://github.com/Emanuele96/alpha-hex/blob/main/images/b2_mcts_1.png)
+MCTS with a board of 2x2 for simplicity. Third step
+
+![MCTS4](https://github.com/Emanuele96/alpha-hex/blob/main/images/b2_mcts_3.png)
+MCTS with a board of 2x2 for simplicity. Fourth step
