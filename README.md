@@ -96,3 +96,6 @@ config.json
     "use_cuda":false
 }
 ```
+### Pictures
+![MCTS1](https://github.com/Emanuele96/alpha-hex/blob/main/images/b2_mcts_0.png)
+MCTS with a board of 2x2 for simplicity. First step
