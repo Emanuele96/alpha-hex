@@ -114,7 +114,7 @@ MCTS with a board of 2x2 for simplicity. Fourth step
 A tournament example with some agents of increasing learning time
 
 
-![game](https://github.com/Emanuele96/alpha-hex/blob/main/images/game.png)
+![game](https://github.com/Emanuele96/alpha-hex/blob/main/images/game.PNG)
 A game visualization.
 
 ![gamewin1](https://github.com/Emanuele96/alpha-hex/blob/main/images/game_winpath1.PNG)
