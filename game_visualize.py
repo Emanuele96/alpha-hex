@@ -156,7 +156,10 @@ if __name__ == "__main__":
             # Start new board and new players
             board = simworld.Board(cfg["board_size"], "Main Game", cfg["board_visualize"], cfg["verbose"])
             if cfg["random_adversary_training"] and random.random() < cfg["random_adversary_probability"]:
-                p2 = random.choice(all_agents[math.floor(cfg["only_last_adversary"]*len(all_agents)):])
+                if random.random() <0.3:
+                    unpickle_file("data/actor", "actor_b6_ep99999.pkl" )
+                else:
+                    p2 = random.choice(all_agents[math.floor(cfg["only_last_adversary"]*len(all_agents)):])
             else:
                 p2 = actor
             print("\n", p1.trained_episodes, " playing against ", p2.trained_episodes)

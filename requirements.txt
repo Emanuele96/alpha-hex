@@ -3,3 +3,6 @@ networkx
 progress
 pickle
 pygame
+tqdm
+anytree
+json

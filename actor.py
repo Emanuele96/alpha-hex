@@ -29,7 +29,7 @@ class Actor:
             else:
                 self.device = "cpu"
             self.nn_layers = cfg["anet_layers"]
-            self.input_size = cfg["board_size"] ** 2 + 1
+            self.input_size = cfg["board_size"] ** 2 *2 + 1
             self.model = ann_model.Net(self.input_size,self.nn_layers, self.use_cuda)
             self.optimizer =  self.initiate_optim(cfg["anet_optim"])
             self.loss_name = cfg["loss"]
@@ -56,7 +56,10 @@ class Actor:
             return None #cross_entropy()
         elif self.loss_name =="l1":
             return nn.L1Loss()
-
+        elif self.loss_name =="bce":
+            return nn.BCELoss()
+        elif self.loss_name =="bcel":
+            return nn.BCEWithLogitsLoss()
 
     def initiate_optim(self, optim_name):
         if optim_name == "sgd":
@@ -79,7 +82,7 @@ class Actor:
             #print("state after ", state)
 
         #Forward the state in the model and get a action distribution
-        state_tensor = torch.from_numpy(state)
+        state_tensor = torch.from_numpy(self.array_to_bin_representation(state))
         action_distribution = self.model(state_tensor.float()).detach().numpy()
         if p2_routine:
             action_distribution = self.flip_array(action_distribution)
@@ -91,10 +94,21 @@ class Actor:
         choosen_action = self.get_max_action_from_distribution(filtered_action_distribution, state[0][0])
         return choosen_action
 
+    def array_to_bin_representation(self, x):
+        out = np.zeros((1, x.shape[1] * 2-1))
+        for i in range(1, x.shape[1]):
+            if x[0][i] == 1:
+                out[0][i*2] = 1
+            elif x[0][i] == 2:
+                out[0][i*2-1] = 1
+        out[0][0] =  x[0][0]
+        return out
+
     def flip_array(self, array):
         array = np.reshape(array, (self.board_size, self.board_size))
-        array = np.fliplr(array)
-        array = np.flipud(array)
+        array = array.T
+        #array = np.fliplr(array)
+        #array = np.flipud(array)
         array = np.reshape(array, (1, -1))
         return array
 
@@ -140,15 +154,13 @@ class Actor:
     def train_step(self, input_data, label):
         self.model.train()
         prediction = self.model(input_data)
-        
-
-        
-        print("input ", input_data[0])
+        '''print("input ", input_data[0])
         print("prediction ", prediction[0])
         print("label ", label[0])
         print("input size ", input_data.size())
         print("prediction size ", prediction.size())
-        
+        print("prediction sum ", torch.sum(prediction))'''
+
         #prediction = self.softmax(prediction)
         #print("softmaxa prediction ", prediction[0] )
         #print("softmaxa prediction ", torch.sum(prediction[0]) )
@@ -158,7 +170,7 @@ class Actor:
                 loss = cross_entropy(prediction, label, self.dim)
         else:
                 loss = self.loss_fn(prediction, label)
-        print("loss ", loss)
+        #print("loss ", loss)
         loss.backward()
         self.optimizer.step()
         self.optimizer.zero_grad()
@@ -181,8 +193,8 @@ class Actor:
         for x_batch, y_batch in train_loader:
             #print(i)
             #send minibatch to device from cpu
-            #x_batch = x_batch.to(device)
-            #y_batch = y_batch.to(device)
+            x_batch = x_batch.to(self.device)
+            y_batch = y_batch.to(self.device)
             losses.append(self.train_step(x_batch, y_batch))
             if i == n_epochs:
                 #break after 1 minibatch

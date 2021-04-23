@@ -7,11 +7,18 @@ import pygame
 class Tournament():
     
     def __init__(self, cfg, players):
-        self.players = players
+        skip = 25
+        #self.players = players
+        self.players = list()
+        for i in range(len(players)):
+            if i%(skip+1)==0:
+                print(i)
+                self.players.append(players[i])
+
         # A list of touples of already played games [(p1, p2)...]
         self.played_games = list()
-        self.wins = [0] * (len(players))
-        self.loss = [0] * (len(players))
+        self.wins = [0] * (len(self.players))
+        self.loss = [0] * (len(self.players))
         self.board_size = cfg["board_size"]
         self.visualize = cfg["tournament_visualize"]
         self.frame_latency = cfg["frame_latency_tournament"]

@@ -5,32 +5,40 @@
     "tournament_visualize":false,
     "frame_latency": 0,
     "frame_latency_rollout":100,
-    "frame_latency_tournament":20,
-    "board_size" : 5,
-    "episodes": 60,
+    "frame_latency_tournament":100,
+    "board_size" : 6,
+    "episodes": 1000,
     "anet_lr": 5e-4,
+    "buffer_type": "list",
+    "clear_buffer_after_episode":0.1,
+    "clear_buffer_amount":0.10,
     "training_type" : "full_minibatch",
-    "minibatch_size": 32,
-    "n_epochs":10,
+    "random_adversary_training": true,
+    "random_adversary_probability":0.2,
+    "only_last_adversary": 0.8,
+    "minibatch_size": 16,
+    "n_epochs":5,
     "anet_layers": [
 
         {
-            "neurons": 30,
-            "activation": "sigmoid"
+            "neurons": 50,
+            "activation": "selu"
         },
-
         {
-            "neurons": 25,
+            "neurons": 50,
+            "activation": "selu"
+        },
+        {
+            "neurons": 36,
             "activation": "linear"
         }
     ],
-    "loss":"mse",
+    "loss":"bce",
     "anet_optim" : "adam",
-    "epsilon": 0.5,
-    "number_of_simulations": 300,
-    "number_cached_anet":20,
+    "number_of_simulations": 1000,
     "number_tournament_games": 2,
-    "actors_to_save":20,
-    "tournament_players":[0,2,4,6,8,10,12,14,16,18,20,24,28,32,36,40,44,48,52,56,60],
+    "actors_to_save":500,
+    "tournament_few_players": false,
+    "tournament_players":[2774,99999],
     "use_cuda":false
 }

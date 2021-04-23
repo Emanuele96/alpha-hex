@@ -11,6 +11,9 @@ class BasicClientActor(BasicClientActorAbs):
         self.series_id = -1
         self.player = player
         BasicClientActorAbs.__init__(self, IP_address, verbose=verbose)
+        self.count = 1
+        self.p1_wins = 0
+        self.p2_wins = 0
 
     def handle_get_action(self, state):
         """
@@ -54,6 +57,7 @@ class BasicClientActor(BasicClientActorAbs):
         #print("reshaped action ", next_action)
         #print("result ", next_move)
         print("I'm player ", state[0])
+        print("State \n", state_array[0][1:].reshape(6,6))
         ##############################
         return next_move
 
@@ -117,9 +121,15 @@ class BasicClientActor(BasicClientActorAbs):
         #
         #
         ##############################
-        print("Game over, these are the stats:")
+        if winner == 1:
+            self.p1_wins += 1
+        elif winner == 2:
+            self.p2_wins += 1
+        print("Game ", self.count, " over, these are the stats:")
         print('Winner: ' + str(winner))
+        print('Wins so long :   p1: ' + str(self.p1_wins), "  p2: ", str(self.p2_wins))
         print('End state: ' + str(end_state))
+        self.count += 1
 
     def handle_series_over(self, stats):
         """
@@ -183,7 +193,7 @@ def unpickle_file(path, filename):
 
 if __name__ == '__main__':
 
-    p_name = "actor_b6_ep99"
+    p_name = "actor_b6_ep3596"
     player = unpickle_file("data/actor", p_name + ".pkl" )
     bsa = BasicClientActor(player, verbose=True)
     bsa.connect_to_server()

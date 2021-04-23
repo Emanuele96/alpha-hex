@@ -68,9 +68,9 @@ class MTCS():
         self.frame_latency = cfg["frame_latency_rollout"]
         self.board_size = cfg["board_size"]
         self.count = 0
-        self.expand_prob = 0.7
-        self.expand_children_prob = 0.7
-        self.rollout_random_prob = 0.1
+        self.expand_prob = 1
+        self.expand_children_prob = 1
+        self.rollout_random_prob = 0
         self.usa_c = 1
         self.print_tree = False
 
@@ -147,8 +147,8 @@ class MTCS():
             #print("distr after \n", flipped_action_distribution)
 
             self.replay_buffer.add_train_case((state, action_distribution))#((cached_simulation_board.get_state(), action_distribution))'''
-        if(self.root.state[0][0]==1):
-            self.replay_buffer.add_train_case((self.root.state, action_distribution))#((cached_simulation_board.get_state(), action_distribution))
+        #if(self.root.state[0][0]==1):
+        self.replay_buffer.add_train_case((self.array_to_bin_representation(self.root.state), action_distribution))#((cached_simulation_board.get_state(), action_distribution))
         if self.verbose == 2:
             print("Simulation distribution\n", self.root.stats.values())
             for key in self.root.stats.keys():
@@ -157,6 +157,16 @@ class MTCS():
         if self.print_tree:
             self.plot_tree()
         return action_distribution
+
+    def array_to_bin_representation(self, x):
+        out = np.zeros((1, x.shape[1] * 2-1))
+        for i in range(1, x.shape[1]):
+            if x[0][i] == 1:
+                out[0][i*2] = 1
+            elif x[0][i] == 2:
+                out[0][i*2-1] = 1
+        out[0][0] =  x[0][0]
+        return out
 
     def flip_array(self, array):
         array = np.reshape(array, (self.board_size, self.board_size))
@@ -380,7 +390,7 @@ class MTCS():
     def calculate_usa(self, node, action):
         if node.stats[action] == 0:
             return math.inf
-        return self.usa_c * math.sqrt((math.log(node.total_visits)/(node.stats[action])))
+        return self.usa_c * math.sqrt((math.log(node.total_visits)/(1+node.stats[action])))
 
     def import_state(self, state):
         #Take the state of the board and return a MCTS root node
